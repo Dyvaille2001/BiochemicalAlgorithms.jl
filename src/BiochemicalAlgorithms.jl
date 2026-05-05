@@ -36,6 +36,8 @@ include("core/bond_order.jl")
 include("core/variants.jl")
 include("core/secondary_structure_type.jl")
 
+
+
 # system
 include("core/system_internals/_system_component_table.jl")
 include("core/system_internals/_atom_table.jl")
@@ -109,6 +111,10 @@ include("structureanalysis/bounding_box.jl")
 
 # optimization
 include("optimization/optimize_structure.jl")
+
+# nma
+include("nma/nma.jl")
+using .NMA
 
 export
     ball_data_path
