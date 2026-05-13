@@ -30,19 +30,24 @@ const ATOMIC_MASSES = Dict(
     "O" => 15.999, "S" => 32.06
     )
 
+function _extract_coordinates_masses_from_atoms(atoms_list)
+    n_atoms = length(atoms_list)
 
-function extract_coordinates_masses(sys)
-    atoms_list = collect(atoms(sys))
-    N = length(atoms_list)
+    coords = zeros(n_atoms, 3)
+    masses = zeros(n_atoms)
 
-    coords = zeros(N, 3)
-    masses = zeros(N)
-
-    
     for (i, atom) in enumerate(atoms_list)
         coords[i, :] = atom.r
         masses[i] = get(ATOMIC_MASSES, string(atom.element), 12.011)
     end
 
     return coords, masses
+end
+
+function extract_coordinates_masses(sys)
+    return _extract_coordinates_masses_from_atoms(collect(atoms(sys)))
+end
+
+function extract_coordinates_masses(atoms_table::AbstractSystemComponentTable)
+    return _extract_coordinates_masses_from_atoms(collect(atoms_table))
 end

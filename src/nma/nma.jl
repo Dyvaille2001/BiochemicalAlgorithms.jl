@@ -4,7 +4,7 @@ using LinearAlgebra
 using StaticArrays
 using Plots
 
-import ..BiochemicalAlgorithms: atoms, update!, compute_energy!
+import ..BiochemicalAlgorithms: AbstractSystemComponentTable, atoms, update!, compute_energy!
 
 
 # Include all your files
@@ -17,6 +17,7 @@ include("vmd_mode_visuals.jl")
 include("compute_frequencies.jl")
 include("compute_b_factors.jl")
 include("frequencies_thz.jl")
+include("run_nma.jl")
 
 
 # Export public API
@@ -26,8 +27,13 @@ export build_hessian,
        extract_coordinates_masses,
        plot_energy_displacement,
        write_vmd_mode,
+       vmd_mode_visuals,
        compute_frequencies,
        compute_b_factors,
-       frequencies_thz
+       frequencies_thz,
+       NormalModeAnalysis,
+       normal_mode_analysis,
+       mode_displacements,
+       first_vibrational_mode
 
 end

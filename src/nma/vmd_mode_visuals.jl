@@ -58,3 +58,5 @@ function vmd_mode_visuals(filename, coords, vecs, mode_idx, inv_M; n_frames=30)
         end
     end
 end
+
+const write_vmd_mode = vmd_mode_visuals
