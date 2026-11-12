@@ -12,7 +12,7 @@ function parse_element_string(es, atom_name)
         result = Elements.Unknown
     else
         result = tryparse(ElementType, es)
-        
+
         # if the element symbol is present and valid, it has precedence,
 		# otherwise, we try to extract it from the atom name
         # NOTE: this is dangerous if non-PDB names are present; names such
@@ -24,7 +24,7 @@ function parse_element_string(es, atom_name)
                         ""
                     else
                         atom_name[2:2]
-                    end 
+                    end
                 else
                     atom_name[1:2]
                 end
@@ -57,13 +57,13 @@ function handle_record(line, sys, pdb_info; strict_line_checking, kwargs...)
 
     if tag ∉ keys(RECORD_MAP)
         # handle unknown record type
-        @warn "Record of PDB not identified: $tag. Record will be skipped." 
+        @warn "Record of PDB not identified: $tag. Record will be skipped."
     else
         parse_record(
-            line, 
-            RECORD_MAP[tag]; 
-            sys=sys, 
-            pdb_info=pdb_info, 
+            line,
+            RECORD_MAP[tag];
+            sys=sys,
+            pdb_info=pdb_info,
             kwargs...)
     end
 end
@@ -79,7 +79,7 @@ function ftype(s, T=Float32)
         elseif s == "c"
             String
         else
-            Nothing 
+            Nothing
         end
     return result
 end
@@ -114,6 +114,21 @@ function parse_record(line, record_type; sys::System{T}, pdb_info::PDBInfo{T}, k
     interpret_record(Val(record_type.record_type), record_type.record_type, results...; sys=sys, pdb_info, kwargs...)
 end
 
+function interpret_record(::Val{RECORD_TYPE__MODEL}, tag, modelno; sys, pdb_info, kwargs...)
+    pdb_info.current_model = modelno
+    if pdb_info.first_model == -1
+        pdb_info.first_model = modelno
+    end
+end
+
+@inline function _skip_model(pdb_info)
+    pdb_info.selected_model != -1 && pdb_info.selected_model != pdb_info.current_model
+end
+
+@inline function _is_first_model(pdb_info)
+    pdb_info.selected_model != -1 || pdb_info.first_model == -1 || pdb_info.current_model == pdb_info.first_model
+end
+
 function interpret_record(::Val{RECORD_TYPE__HEADER}, tag, classification, deposition_date, id; sys, pdb_info, kwargs...)
     pdb_info.name = classification
     pdb_info.deposition_date = deposition_date
@@ -128,7 +143,7 @@ function interpret_record(::Val{RECORD_TYPE__TER}, tag, serial_number, residue_n
     residue_number, residue_insertion_code; sys, pdb_info, kwargs...)
 
     # should we skip this model?
-    if ((pdb_info.selected_model != -1) && (pdb_info.selected_model != pdb_info.current_model))
+    if _skip_model(pdb_info)
         return
     end
 
@@ -151,7 +166,6 @@ function interpret_record(
     z,
     occupancy,
     temperature_factor,
-    segment_id,
     element_symbol,
     charge;
     sys::System{T},
@@ -161,7 +175,7 @@ function interpret_record(
     kwargs...) where {T}
 
     # should we skip this model?
-    if ((pdb_info.selected_model != -1) && (pdb_info.selected_model != pdb_info.current_model))
+    if _skip_model(pdb_info)
         return
     end
 
@@ -170,19 +184,27 @@ function interpret_record(
         return
     end
 
-    # is this a new chain?
-    if (isnothing(pdb_info.current_chain)
-        ||
-        chain_id != pdb_info.current_chain.name)
-        pdb_info.current_chain = Chain(molecules(sys)[1]; name=chain_id)
-        pdb_info.current_residue = nothing
-    end
+    residue_name = strip(residue_name)
 
     # right now, we only read the first alternate location indicator
     if (strip(alternate_location_identifier) != ""
         &&
         (alternate_location_identifier != pdb_info.alternate_location_identifier))
+        @debug "load_pdb: ignoring ATOM $residue_name:$(strip(atom_name)) at alternate location $alternate_location_identifier"
+        pdb_info.alternate_location_warning = true
         return
+    end
+
+    # is this a new chain?
+    if (isnothing(pdb_info.current_chain)
+        ||
+        chain_id != pdb_info.current_chain.name)
+
+        if _is_first_model(pdb_info)
+            pdb_info.current_chain = Chain(molecules(sys)[1]; name=chain_id)
+        end # else case is handled below
+
+        pdb_info.current_residue = nothing
     end
 
     # is this a new residue?
@@ -191,25 +213,42 @@ function interpret_record(
         || residue_name != pdb_info.current_residue.name
         || residue_insertion_code != get(pdb_info.current_residue.properties, :insertion_code, ""))
 
-        # TODO: we should handle nucleotides correctly here
-        pdb_info.current_residue = Fragment(
-            pdb_info.current_chain,
-            residue_sequence_number;
-            name=residue_name,
-            variant=is_hetero_atom ? FragmentVariant.None : FragmentVariant.Residue,
-            properties=Properties([
-                :is_hetero_fragment => is_hetero_atom,
-                :insertion_code => residue_insertion_code,
-                :alternate_location_id => alternate_location_identifier
-            ])
-        )
+        if _is_first_model(pdb_info)
+            # TODO: we should handle nucleotides correctly here
+            pdb_info.current_residue = Fragment(
+                pdb_info.current_chain,
+                residue_sequence_number;
+                name=residue_name,
+                variant=is_hetero_atom ? FragmentVariant.None : FragmentVariant.Residue,
+                properties=Properties([
+                    :is_hetero_fragment => is_hetero_atom,
+                    :insertion_code => residue_insertion_code,
+                    :alternate_location_id => alternate_location_identifier
+                ])
+            )
+        else
+            ft = filter(f ->
+                f.number == residue_sequence_number &&
+                f.name == residue_name &&
+                get_property(f, :insertion_code) == residue_insertion_code &&
+                get_property(f, :alternate_location_id) == alternate_location_identifier &&
+                parent_chain(f).name == chain_id,
+                fragments(sys)
+            )
+            if isempty(ft)
+                @warn "load_pdb: model $(pdb_info.current_model) tried to add additional fragment ($residue_sequence_number/$residue_name/$chain_id)... skipping record"
+                return
+            end
+            pdb_info.current_residue = only(ft)
+            pdb_info.current_chain = parent_chain(pdb_info.current_residue)
+        end
     end
 
     # finally, create the atom
     formal_charge = tryparse(Int, charge)
     formal_charge = isnothing(formal_charge) ? 0 : formal_charge
 
-    Atom(
+    a = Atom(
         pdb_info.current_residue,
         serial_number,
         parse_element_string(strip(element_symbol), atom_name);
@@ -226,6 +265,12 @@ function interpret_record(
         flags=Flags(),
         frame_id=pdb_info.current_model
     )
+
+    if _is_first_model(pdb_info)
+        pdb_info.atom_cache[serial_number] = a
+    end
+
+    a
 end
 
 
@@ -244,7 +289,6 @@ function interpret_record(
     z,
     occupancy,
     temperature_factor,
-    segment_id,
     element_symbol,
     charge;
     sys::System{T},
@@ -252,7 +296,16 @@ function interpret_record(
     kwargs...) where {T}
 
     # should we skip this model?
-    if ((pdb_info.selected_model != -1) && (pdb_info.selected_model != pdb_info.current_model))
+    if _skip_model(pdb_info)
+        return
+    end
+
+    # right now, we only read the first alternate location indicator
+    if (strip(alternate_location_identifier) != ""
+        &&
+        (alternate_location_identifier != pdb_info.alternate_location_identifier))
+        @debug "load_pdb: ignoring HETATM $residue_name:$(strip(atom_name)) at alternate location $alternate_location_identifier"
+        pdb_info.alternate_location_warning = true
         return
     end
 
@@ -260,9 +313,13 @@ function interpret_record(
     interpret_record(Val(RECORD_TYPE__ATOM), tag, serial_number,
         atom_name, alternate_location_identifier, residue_name,
         chain_id, residue_sequence_number, residue_insertion_code,
-        x, y, z, occupancy, temperature_factor, segment_id,
+        x, y, z, occupancy, temperature_factor,
         element_symbol, charge;
         sys=sys, pdb_info=pdb_info, is_hetero_atom=true, kwargs...)
+
+    if isnothing(pdb_info.current_residue)
+        return
+    end
 
     # ensure the residue is marked as a hetero fragement, even if the
     # first atom was a regular one
@@ -319,11 +376,11 @@ function interpret_record(
     ::Val{RECORD_TYPE__HELIX},
     tag,
     serial_number,
-    helix_id, 
+    helix_id,
     initial_residue_name,
     initial_residue_chain_id,
     initial_residue_number,
-    initial_residue_insertion_code, 
+    initial_residue_insertion_code,
     terminal_residue_name,
     terminal_residue_chain_id,
     terminal_residue_number,
@@ -440,22 +497,22 @@ function interpret_record(
     )
 end
 
+const _nonmetals = Set([
+    Elements.Sb, Elements.As, Elements.At, Elements.Fm, Elements.Ge,
+    Elements.H, Elements.Ne, Elements.O, Elements.P, Elements.Po,
+    Elements.Rn, Elements.Si, Elements.Te, Elements.Ar, Elements.B,
+    Elements.Br, Elements.C, Elements.Cl, Elements.F, Elements.He,
+    Elements.I, Elements.Kr, Elements.N, Elements.S, Elements.Xe
+])
 
-"""
-    _atom_by_number(
-        ac::AbstractAtomContainer{T} = default_system(),
-        idx::Int
-    ) -> Atom{T}
+function _is_bound_to(pdb_info, a1, a2)
+    a1 < a2 ?
+        (a1, a2) in pdb_info.bond_cache :
+        (a2, a1) in pdb_info.bond_cache
+end
 
-Returns the first `Atom{T}` associated with the given `number` in `sys`. Throws a `KeyError` if no such
-atom exists.
-"""
-@inline function _atom_by_number(
-    ac::AbstractAtomContainer{T},
-    serial_number::Int;
-) where T
-    idx = filter(atom -> atom.number == serial_number, atoms(ac)).idx
-    isempty(idx) ? nothing : atom_by_idx(parent(ac), first(idx))
+function _record_bond!(pdb_info, a1, a2)
+    push!(pdb_info.bond_cache, a1 < a2 ? (a1, a2) : (a2, a1))
 end
 
 function interpret_record(
@@ -467,47 +524,44 @@ function interpret_record(
     bond_atom3,
     bond_atom4,
     hbond_atom1,
-    hbond_atom2, 
-    salt_bridge_atom1, 
-    hbond_atom3, 
+    hbond_atom2,
+    salt_bridge_atom1,
+    hbond_atom3,
     hbond_atom4,
     salt_bridge_atom2;
     sys,
     pdb_info,
     kwargs...)
 
-    # find the corresponding atom which bonds we want to recreate
-    nonmetals = [
-        Elements.Sb, Elements.As, Elements.At, Elements.Fm, Elements.Ge,
-        Elements.H, Elements.Ne, Elements.O, Elements.P, Elements.Po,
-        Elements.Rn, Elements.Si, Elements.Te, Elements.Ar, Elements.B, 
-        Elements.Br, Elements.C, Elements.Cl, Elements.F, Elements.He, 
-        Elements.I, Elements.Kr, Elements.N, Elements.S, Elements.Xe]
+    a = get(pdb_info.atom_cache, serial_number, nothing)
+    if isnothing(a)
+        return
+    end
 
- 
-    a = _atom_by_number(sys, serial_number)
-    bond_atoms = [bond_atom1, bond_atom2, bond_atom3]
+    bond_atoms = [bond_atom1, bond_atom2, bond_atom3, bond_atom4]
     hbond_atoms = [hbond_atom1, hbond_atom2, hbond_atom3, hbond_atom4]
     salt_bridge_atoms = [salt_bridge_atom1, salt_bridge_atom2]
 
-    if a.element in nonmetals
+    if a.element in _nonmetals
         for b_idx in bond_atoms
-            b = _atom_by_number(sys, b_idx)
-            if !isnothing(b) && !is_bound_to(b, a)
-                if b.element in nonmetals
+            b = get(pdb_info.atom_cache, b_idx, nothing)
+            if !isnothing(b) && !_is_bound_to(pdb_info, b.idx, a.idx)
+                if b.element in _nonmetals
                     flags = Flags()
                     push!(flags, :TYPE__COVALENT)
-                    Bond(sys, a.idx, b.idx, BondOrder.Single; flags)
+                    Bond(a, b, BondOrder.Single; flags)
+                    _record_bond!(pdb_info, a.idx, b.idx)
                 end
             end
         end
         for h_idx in hbond_atoms
-            h = _atom_by_number(sys, h_idx)
-            if !isnothing(h) && h.element in nonmetals
-                if !is_bound_to(h, a)
+            h = get(pdb_info.atom_cache, h_idx, nothing)
+            if !isnothing(h) && h.element in _nonmetals
+                if !_is_bound_to(pdb_info, h.idx, a.idx)
                     flags = Flags()
                     push!(flags, :TYPE__HYDROGEN)
-                    Bond(sys, a.idx, h.idx, BondOrder.Single; flags)
+                    Bond(a, h, BondOrder.Single; flags)
+                    _record_bond!(pdb_info, a.idx, h.idx)
                 end
             end
         end
@@ -515,11 +569,12 @@ function interpret_record(
 
     # create salt bridges
     for b_idx in salt_bridge_atoms
-        b = _atom_by_number(sys, b_idx)
-        if !isnothing(b) && !is_bound_to(b, a)
+        b = get(pdb_info.atom_cache, b_idx, nothing)
+        if !isnothing(b) && !_is_bound_to(pdb_info, b.idx, a.idx)
             flags = Flags()
             push!(flags, :TYPE__SALT_BRIDGE)
-            Bond(sys, a.idx, b.idx, BondOrder.Single; flags)
+            Bond(a, b, BondOrder.Single; flags)
+            _record_bond!(pdb_info, a.idx, b.idx)
         end
     end
 end
@@ -529,10 +584,19 @@ function interpret_record(record_type, tag, record_data...; sys, pdb_info, kwarg
     push!(pdb_info.records, PDBRecord(tag, record_data))
 end
 
-function postprocess_ssbonds_!(sys, pdb_info, fragment_cache)
-    for ssbond in pdb_info.ssbonds
-        f1 = fragment_cache[ssbond.first]
-        f2 = fragment_cache[ssbond.second]
+function postprocess_ssbonds_!(sys, pdb_info::PDBInfo, fragment_cache)
+    postprocess_ssbonds_!(sys, pdb_info.ssbonds, fragment_cache)
+end
+
+function postprocess_ssbonds_!(sys, ssbonds, fragment_cache)
+    for ssbond in ssbonds
+        f1 = get(fragment_cache, ssbond.first, nothing)
+        f2 = get(fragment_cache, ssbond.second, nothing)
+
+        if isnothing(f1) || isnothing(f2)
+            @debug "load_pdb: ignoring disulphide bond $(ssbond.first) -> $(ssbond.second)"
+            continue
+        end
 
         set_flag!(f1, :HAS_SSBOND)
         set_flag!(f2, :HAS_SSBOND)
@@ -540,14 +604,14 @@ function postprocess_ssbonds_!(sys, pdb_info, fragment_cache)
         # build the bond
         a1 = findfirst(a -> a.element == Elements.S, atoms(f1))
         a2 = findfirst(a -> a.element == Elements.S, atoms(f2))
-     
+
         if !isnothing(a1) && !isnothing(a2)
             # if the information about disulfid bonds were in connections, the bond already exists
-            # we will only add the corresponding flag 
+            # we will only add the corresponding flag
             bond_idx = findfirst(
-                b -> 
-                ((b.a1 == atoms(f1)[a1].idx) && (b.a2 == atoms(f2)[a2].idx)) ||
-                ((b.a1 == atoms(f2)[a2].idx) && (b.a2 == atoms(f1)[a1].idx)), bonds(sys))
+                b ->
+                ((b.atom1_idx == atoms(f1)[a1].idx) && (b.atom2_idx == atoms(f2)[a2].idx)) ||
+                ((b.atom1_idx == atoms(f2)[a2].idx) && (b.atom2_idx == atoms(f1)[a1].idx)), bonds(sys))
 
             if !isnothing(bond_idx)
                 set_flag!(bonds(sys)[bond_idx],(:TYPE__DISULPHIDE_BOND))
@@ -555,7 +619,7 @@ function postprocess_ssbonds_!(sys, pdb_info, fragment_cache)
                 set_property!(bonds(sys)[bond_idx], :SYMMETRY_OPERATOR_1, ssbond.symmetry_operator_1)
                 set_property!(bonds(sys)[bond_idx], :BOND_LENGTH, ssbond.bond_length)
             else
-                Bond(sys, atoms(f1)[a1].idx, atoms(f2)[a2].idx, BondOrder.Single; 
+                Bond(atoms(f1)[a1], atoms(f2)[a2], BondOrder.Single;
                      flags=Flags((:TYPE__DISULPHIDE_BOND,)),
                      properties=Properties(
                         :SYMMETRY_OPERATOR_0 => ssbond.symmetry_operator_0,
@@ -567,10 +631,20 @@ function postprocess_ssbonds_!(sys, pdb_info, fragment_cache)
     end
 end
 
-function postprocess_secondary_structures_!(sys, pdb_info, fragment_cache, create_coils)
-    for ss in pdb_info.secondary_structures
-        initial_res  = fragment_cache[ss.initial_residue]
-        terminal_res = fragment_cache[ss.terminal_residue]
+function postprocess_secondary_structures_!(sys, pdb_info::PDBInfo, fragment_cache, create_coils)
+    postprocess_secondary_structures_!(sys, pdb_info.secondary_structures, fragment_cache, create_coils)
+end
+
+function postprocess_secondary_structures_!(sys, ss_records, fragment_cache, create_coils)
+    for ss in ss_records
+        initial_res  = get(fragment_cache, ss.initial_residue, nothing)
+        terminal_res = get(fragment_cache, ss.terminal_residue, nothing)
+
+        if isnothing(initial_res) || isnothing(terminal_res)
+            @debug "load_pdb: ignoring secondary structure record " *
+                   "$(typeof(ss)) ($(ss.initial_residue) -> $(ss.terminal_residue))"
+            continue
+        end
 
         parent_chain_initial = parent_chain(initial_res)
         parent_chain_terminal = parent_chain(terminal_res)
@@ -578,79 +652,91 @@ function postprocess_secondary_structures_!(sys, pdb_info, fragment_cache, creat
         if isnothing(parent_chain_initial)  ||
            isnothing(parent_chain_terminal) ||
            parent_chain_initial.idx != parent_chain_terminal.idx
-            @error "Invalid Secondary Structure record: residues in different chains!"
+            @error "load_pdb: ignoring invalid secondary structure record, residues in different chains: " *
+                   "$(typeof(ss)) ($(ss.initial_residue) -> $(ss.terminal_residue))"
+            continue
         end
 
         new_ss = if typeof(ss) == HelixRecord
             new_ss = SecondaryStructure(
-                parent_chain(initial_res), 
-                ss.number, 
+                initial_res,
+                terminal_res,
+                ss.number,
                 SecondaryStructureElement.Helix;
-                name=ss.name)
+                name=strip(ss.name))
             set_property!(new_ss, :HELIX_CLASS, ss.helix_class)
             set_property!(new_ss, :COMMENT, ss.comment)
 
             new_ss
         elseif typeof(ss) == SheetRecord
             new_ss = SecondaryStructure(
-                parent_chain(initial_res), 
-                ss.number, 
+                initial_res,
+                terminal_res,
+                ss.number,
                 SecondaryStructureElement.Strand;
-                name="$(ss.name):$(ss.number)")
+                name=strip("$(ss.name):$(ss.number)"))
             set_property!(new_ss, :STRAND_SENSE, ss.sense_of_strand)
 
             new_ss
         else
             new_ss = SecondaryStructure(
-                parent_chain(initial_res), 
-                ss.number, 
+                initial_res,
+                terminal_res,
+                ss.number,
                 SecondaryStructureElement.Turn;
-                name=ss.name)
+                name=strip(ss.name))
             set_property!(new_ss, :COMMENT, ss.comment)
 
             new_ss
-        end
-
-        for f in fragments(parent_chain(initial_res))
-            if f.number >= initial_res.number && f.number <= terminal_res.number
-                f.secondary_structure_idx = new_ss.idx
-            end
         end
     end
 
     # do we need to put every amino acid residue into a secondary structure?
     if create_coils
+        fragments_in_ss = Set(fragments(secondary_structures(sys)).idx)
         for c in chains(sys)
-            fs = residues(c, variant=FragmentVariant.Residue)
+            rt = residues(c)
 
-            if isempty(fs[fs.secondary_structure_idx .== nothing])
+            if isempty(setdiff(Set(rt.idx), fragments_in_ss))
                 continue
             end
 
-            last_fragment = nothing
+            first_frag = nothing
+            last_frag = nothing
+            for res in rt
+                if res.idx ∉ fragments_in_ss && isnothing(first_frag)
+                    first_frag = res
 
-            current_ss = nothing
-            for f in fs
-                if isnothing(f.secondary_structure_idx)
-                    if isnothing(last_fragment) || isnothing(current_ss) || parent_secondary_structure(last_fragment).idx != current_ss.idx
-                        current_ss = SecondaryStructure(c, 
-                        maximum(secondary_structures(c).number, init=0) + 1, 
-                        SecondaryStructureElement.Coil)
-                    end
-                    f.secondary_structure_idx = current_ss.idx
+                elseif res.idx ∈ fragments_in_ss && !isnothing(first_frag) && !isnothing(last_frag)
+                    SecondaryStructure(
+                        first_frag,
+                        last_frag,
+                        maximum(secondary_structures(c).number, init=0) + 1,
+                        SecondaryStructureElement.Coil
+                    )
+                    first_frag = nothing
+                    last_frag = nothing
+                    continue
                 end
-                last_fragment = f
+                last_frag = res
+            end
+            if !isnothing(first_frag) && !isnothing(last_frag)
+                SecondaryStructure(
+                    first_frag,
+                    last_frag,
+                    maximum(secondary_structures(c).number, init=0) + 1,
+                    SecondaryStructureElement.Coil
+                )
             end
         end
     end
 
     # finally, renumber the elements to be consecutive
     if nsecondary_structures(sys) > 0
-        sort_secondary_structures!(sys, by=se -> (se.chain_idx, minimum(f.number for f in fragments(se))))
-        
+        sort_secondary_structures!(sys, by=se -> (se.chain_idx, minimum(f.number for f in fragments(se); init=0)))
+
         for c in chains(sys)
             secondary_structures(c).number .= collect(1:nsecondary_structures(c))
         end
     end
 end
-

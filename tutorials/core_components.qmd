@@ -12,7 +12,6 @@ In the center of all classes resides the [`System`](@ref). So let's see it in ac
 using BiochemicalAlgorithms
 
 s = load_pdb(ball_data_path("../test/data/AlaAla.pdb"))
-s
 ```
 
 This will give us an overview of the objects associated with our system. It contains 23 atoms, 0 bonds, 1 molecule, 1 chain, 0 secondary structures and 2 fragments. We look at each group separately in the following sections.
@@ -43,7 +42,6 @@ println()
 n1 = atom_by_name(s, "N")
 
 println(n1.idx)
-
 ```
 
 We can access an atom by its name, which will return the first atom matching the given name. If there are more atoms with the same name and we are not interested in the first one, we can access the atom by the atom index.
@@ -56,7 +54,6 @@ for a in sys_atms
 end
 
 n2 = atom_by_idx(s, 17)
-
 ```
 
 [`Atom`](@ref) features the atom number as well. The atom number does NOT have to be unique inside the system!
@@ -105,10 +102,7 @@ ball_and_stick(s)
 Now, let's create some bonds:
 
 ```{julia}
-fdb = FragmentDB() # default FragmentDB
-normalize_names!(s, fdb) # in case our input PDB file uses a strange naming standard
-reconstruct_fragments!(s, fdb) # in case our input file misses some atoms
-build_bonds!(s, fdb) # create the bonds
+infer_topology!(s)
 # ball_and_stick(s) uncomment for visualization
 ```
 
@@ -132,7 +126,9 @@ bonds(s)
 Bonds can be accessed via their respective index, deleted, and be put in the system
 ```{julia}
 bond = bond_by_idx(s, 30)
-println("Bond index: ", bond.idx, ", between atom ", bond.a1, " and ", bond.a2, ", with order: ", bond.order)
+a1, a2 = get_partners(bond)
+println("Bond index: ", bond.idx, ", between atoms ", a1.idx, " and ", a2.idx,
+    ", with order: ", bond.order)
 
 println("Bonds in the system: ", nbonds(s))
 
@@ -140,32 +136,25 @@ delete!(bond)
 
 println("Bonds in the system after deletion: ", nbonds(s))
 
-bond = Bond(s, 5, 13, BondOrder.Single)
+bond = Bond(a1, a2, BondOrder.Single)
 
-println("Bonds in the system after deletion: ", nbonds(s))
+println("Bonds in the system after re-adding the bond: ", nbonds(s))
 ```
 
 Be careful: The bond index is now different because it is a new Bond object:
 ```{julia}
 bond.idx
-
 ```
 
-Another helpful functionalities when it comes to bonds are the following:
+We have used `get_partners` above to retrieve both atoms associated with a bond. Similarly, `get_partner` can be used to retrieve the second atom if one atom of a bond is already known:
 
 ```{julia}
-# get the atoms sharing a bond
-a1, a2 = get_partners(bond)
-
-# or if we have only given one atom
 atom = atom_by_idx(s, 12)
 bond = bonds(atom)[1]
 partner_atom = get_partner(bond, atom)
 println(partner_atom.idx)
 println("The bond length is ", bond_length(bond))
 ```
-
-Sometimes it is necessary to discriminate between hydrogen and nonhydrogen_bonds. Since this a common use case, there are built in functionalities:
 
 
 ## Fragment
@@ -181,7 +170,6 @@ end
 n2 = atom_by_idx(s, 5)
 
 println("The N atom belongs to residue: ", n2.fragment_idx)
-
 ```
 
 We can get the fragment as well directly:
@@ -202,7 +190,7 @@ res1.variant # 1 = unknown, 2 = residue, 3 = nucleotide
 Alternatively, it is also possible to check if this is a nucleotide:
 
 ```{julia}
-println(is_nucleotide(res1))
+println(isnucleotide(res1))
 
 println("Number of fragments before push: ", nfragments(s))
 push!(chain_by_idx(s, 2), res1)
@@ -232,7 +220,7 @@ As described in the Fragments section, [`Residue`](@ref) is a Fragment with `Fra
 ```{julia}
 s = load_pdb(ball_data_path("../test/data/AlaAla.pdb")) # restore original data
 res = fragments(s)[1]
-println("is_amino_acid(): ", is_amino_acid(res))
+println("isresidue():     ", isresidue(res))
 println("is_c_terminal(): ", is_c_terminal(res))
 println("is_n_terminal(): ", is_n_terminal(res))
 ```
@@ -240,15 +228,11 @@ println("is_n_terminal(): ", is_n_terminal(res))
 Some functionality is only available after preprocessing through the FragmentDB:
 
 ```{julia}
-fdb = FragmentDB()
-normalize_names!(s, fdb)
-reconstruct_fragments!(s, fdb)
-build_bonds!(s, fdb)
+infer_topology!(s)
 println("is_c_terminal(): ", is_c_terminal(res))
 println("is_n_terminal(): ", is_n_terminal(res))
 res2 = fragments(s)[2]
 println("is_c_terminal(): ", is_c_terminal(res2))
-
 ```
 
 ## Nucleotide
@@ -267,13 +251,12 @@ n2 = Nucleotide(chain, 2)
 
 
 ## Molecule
-Molecules are used to distinguish between proteins and non-proteins (see [`Molecules`](@ref)
+[`Molecules`](@ref) are used to distinguish between proteins and non-proteins
 
 
 ```{julia}
 s = load_pdb(ball_data_path("../test/data/2ptc.pdb"))
 m = molecules(s)
-m
 ```
 
 Like in the other cases before, we get a table of molecules. Which we can access similarly to atoms and bonds:
@@ -290,17 +273,13 @@ Molecules have a variant which is `MoleculareVariant.None` by default. Users can
 
 ```{julia}
 println("is a protein: ", isprotein(m[1]))
-fdb = FragmentDB()
-normalize_names!(s, fdb)
-reconstruct_fragments!(s, fdb)
-build_bonds!(s, fdb)
+infer_topology!(s)
 
 println("is a protein: ", isprotein(m[1]))
 
 m[1].variant = MoleculeVariant.Protein
 
 println("is a protein: ", isprotein(m[1]))
-
 ```
 
 Similar to molecules we can access proteins:
@@ -314,14 +293,12 @@ A very useful functionality is the access the parent molecule or protein a speci
 ```{julia}
 atom = atom_by_idx(s, 5)
 println("This atom belongs to protein: ", parent_protein(atom))
-
 ```
 
 ## Chains
 
 Chains can be considered as an aggregation of fragments (either residues or nucleotides).
 ```{julia}
-
 s = load_pdb(ball_data_path("../test/data/4hhb.pdb"))
 
 println("Number of chains in the system: ", nchains(s))
@@ -345,38 +322,40 @@ Now, that we learned about chains, we can take a look at the secondary structure
 s = System()
 chain = Chain(Molecule(s))
 ss1 = SecondaryStructure(
-    chain,
+    Residue(chain, 1),
+    Residue(chain, 2),
     1,
     SecondaryStructureElement.Helix;
     name="H1"
 )
 
 ss2 = SecondaryStructure(
-    chain,
+    Residue(chain, 3),
+    Residue(chain, 4),
     2,
     SecondaryStructureElement.Coil;
     name="C1"
 )
 
 ss3 = SecondaryStructure(
-    chain,
+    Residue(chain, 5),
+    Residue(chain, 6),
     3,
     SecondaryStructureElement.Strand;
     name="S1"
 )
 ss4 = SecondaryStructure(
-    chain,
+    Residue(chain, 7),
+    Residue(chain, 8),
     4,
     SecondaryStructureElement.Turn;
     name="T1"
 )
 
-ss3.type = SecondaryStructureElement.Helix
 println("Number of secondary structures: ", nsecondary_structures(s))
 
 # get all helices of the chain
-helices = (filter(sst -> sst.type == ss1.type, secondary_structures(chain)))
-
+filter(sst -> sst.type == SecondaryStructureElement.Helix, secondary_structures(chain))
 ```
 
 In addition, we can compute the secondary structures for an input file:
@@ -384,12 +363,7 @@ In addition, we can compute the secondary structures for an input file:
 s = load_pdb(ball_data_path("../test/data/bpti.pdb"))
 println(s)
 
-normalize_names!(s, fdb)
-reconstruct_fragments!(s, fdb)
-build_bonds!(s, fdb)
+infer_topology!(s)
 predict_hbonds!(s, :KABSCH_SANDER)
 predict_secondary_structure!(s)
 ```
-
-## Congratulation
-You are now familiar with the most important core entities of BiochemicalAlgorithms.jl

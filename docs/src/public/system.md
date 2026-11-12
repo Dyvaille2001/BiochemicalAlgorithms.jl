@@ -25,11 +25,16 @@ AbstractSystemComponent
 AbstractSystemComponentTable
 SystemComponentTable
 SystemComponentTableCol
+copy_frame!
+frame_ids
 full_table
 get_property
 has_flag
 has_property
+nframes
 revalidate_indices!
+select_frame!
+selected_frame
 set_flag!
 set_property!
 unset_flag!
@@ -62,7 +67,6 @@ bonds
 nbonds
 sort_bonds!
 Base.delete!(::Bond)
-Base.push!(::System{T}, ::Bond{T}) where T
 ```
 
 ## Molecules
@@ -114,10 +118,8 @@ SecondaryStructureTable
 secondary_structure_by_idx
 secondary_structures
 nsecondary_structures
-parent_secondary_structure
 sort_secondary_structures!
 Base.delete!(::SecondaryStructure)
-Base.push!(::Chain{T}, ::SecondaryStructure{T}) where T
 ```
 
 ## Fragments
@@ -145,7 +147,6 @@ nfragments
 parent_fragment
 sort_fragments!
 Base.delete!(::Fragment)
-Base.push!(::SecondaryStructure{T}, ::Fragment{T}) where T
 Base.push!(::Chain{T}, ::Fragment{T}) where T
 ```
 

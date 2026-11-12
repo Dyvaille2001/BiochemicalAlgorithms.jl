@@ -1,5 +1,5 @@
 using BiochemicalAlgorithms
-using Documenter
+using Documenter, DocumenterCodeBlocks
 
 DocMeta.setdocmeta!(BiochemicalAlgorithms, :DocTestSetup, :(using BiochemicalAlgorithms); recursive=true)
 
@@ -12,6 +12,7 @@ const pages = Any[
         "How to apply force fields" => "tutorials/force_field_ops.md",
         "How to handle molecules" =>"tutorials/handle_molecules.md",
         "How to read and write" => "tutorials/read_and_write.md",
+        "Molecular surfaces" => "tutorials/surfaces.md",
 
     ],
     "Library" => Any[
@@ -23,9 +24,10 @@ const pages = Any[
         "Structure analysis" => "public/structureanalysis.md",
         "Utility functions" => "public/utils.md",
         "Internals" => Any[
-            "File Formats" => "private/fileformats.md",
             "Biomolecular systems" => "private/system.md",
-            "Mappings" => "private/mappings.md"
+            "Mappings" => "private/mappings.md",
+            "Molecular preprocessing" => "private/preprocessing.md",
+            "Structure analysis" => "private/structureanalysis.md"
         ]
     ]
 ]
@@ -41,6 +43,7 @@ makedocs(;
         assets=String[],
     ),
     pages = pages,
+    plugins = [CodeBlocks()],
 )
 
 deploydocs(;

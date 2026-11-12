@@ -53,7 +53,7 @@ Atom(
     radius::T = zero(T),
     properties::Properties = Properties(),
     flags::Flags = Flags(),
-    frame_id::Int = 1
+    frame_id::Int = selected_frame(ac),
     molecule_idx::MaybeInt = nothing,
     chain_idx::MaybeInt = nothing,
     fragment_idx::MaybeInt = nothing
@@ -76,7 +76,7 @@ const Atom{T} = SystemComponent{T, :Atom}
     sys::System{T},
     number::Int,
     element::ElementType;
-    frame_id::Int = 1,
+    frame_id::Int = selected_frame(sys),
     molecule_idx::MaybeInt = nothing,
     chain_idx::MaybeInt = nothing,
     fragment_idx::MaybeInt = nothing,
@@ -156,14 +156,6 @@ end
         chain_by_idx(atom._sys, atom.chain_idx)
 end
 
-@inline function parent_secondary_structure(atom::Atom)
-    pf = parent_fragment(atom)
-
-    isnothing(pf) || isnothing(pf.secondary_structure_idx) ?
-        nothing :
-        secondary_structure_by_idx(parent(atom), pf.secondary_structure_idx)
-end
-
 @inline function parent_fragment(atom::Atom)
     isnothing(atom.fragment_idx) ?
         nothing :
@@ -198,13 +190,13 @@ Returns the first `Atom{T}` associated with the given `name` in `ac`. Returns no
 atom exists.
 
 # Supported keyword arguments
- - `frame_id::MaybeInt = 1`: \
+ - `frame_id::MaybeInt = selected_frame(ac)`: \
 Any value other than `nothing` limits the result to atoms matching this frame ID.
 """
 @inline function atom_by_name(
     ac::AbstractAtomContainer{T},
     name::AbstractString;
-    frame_id::MaybeInt = 1
+    frame_id::MaybeInt = selected_frame(parent(ac))
 ) where T
     idx = filter(atom -> atom.name == name, atoms(ac; frame_id = frame_id)).idx
     isempty(idx) ? nothing : atom_by_idx(parent(ac), first(idx))
@@ -215,15 +207,16 @@ end
 end
 
 """
-    atoms(::Chain)
-    atoms(::Fragment)
-    atoms(::Molecule)
-    atoms(::System = default_system())
+    atoms(ac::Bond)
+    atoms(ac::Chain)
+    atoms(ac::Fragment)
+    atoms(ac::Molecule)
+    atoms(ac::System = default_system())
 
 Returns an `AtomTable{T}` containing all atoms of the given atom container.
 
 # Supported keyword arguments
- - `frame_id::MaybeInt = 1`
+ - `frame_id::MaybeInt = selected_frame(ac)`
  - `molecule_idx::Union{MaybeInt, Some{Nothing}} = nothing`
  - `chain_idx::Union{MaybeInt, Some{Nothing}} = nothing`
  - `fragment_idx::Union{MaybeInt, Some{Nothing}} = nothing`
@@ -231,7 +224,7 @@ All keyword arguments limit the results to atoms matching the given IDs. Keyword
 `nothing` are ignored. You can use `Some(nothing)` to explicitly filter for ID values of `nothing`.
 """
 @inline function atoms(sys::System{T} = default_system();
-    frame_id::MaybeInt = 1,
+    frame_id::MaybeInt = selected_frame(sys),
     molecule_idx::Union{MaybeInt, Some{Nothing}} = nothing,
     chain_idx::Union{MaybeInt, Some{Nothing}} = nothing,
     fragment_idx::Union{MaybeInt, Some{Nothing}} = nothing
@@ -289,7 +282,7 @@ Returns a `BondTable{T}` containing all bonds of the given atom(s).
 @inline function bonds(atom::Atom)
     aidx = atom.idx
     _filter_bonds(
-        bond -> bond.a1 == aidx || bond.a2 == aidx,
+        bond -> bond.atom1_idx == aidx || bond.atom2_idx == aidx,
         parent(atom)
     )
 end
@@ -297,7 +290,7 @@ end
 @inline function bonds(at::AtomTable)
     aidx = Set(at.idx)
     _filter_bonds(
-        bond -> bond.a1 in aidx || bond.a2 in aidx,
+        bond -> bond.atom1_idx in aidx || bond.atom2_idx in aidx,
         at._sys
     )
 end
@@ -355,11 +348,16 @@ assigned a new `idx`.
 See [`atoms`](@ref)
 """
 @inline function Base.push!(sys::System{T}, atom::Atom{T};
-    frame_id::Int = 1,
+    frame_id::Int = selected_frame(sys),
     molecule_idx::MaybeInt = nothing,
     chain_idx::MaybeInt = nothing,
     fragment_idx::MaybeInt = nothing
 ) where T
+    _copy!(atom; sys, frame_id, molecule_idx, chain_idx, fragment_idx)
+    sys
+end
+
+@inline function _copy!(atom::Atom{T}; sys::System{T} = parent(atom), kwargs...) where T
     Atom(sys, atom.number, atom.element;
         name = atom.name,
         atom_type = atom.atom_type,
@@ -371,12 +369,12 @@ See [`atoms`](@ref)
         radius = atom.radius,
         properties = atom.properties,
         flags = atom.flags,
-        frame_id = frame_id,
-        molecule_idx = molecule_idx,
-        chain_idx = chain_idx,
-        fragment_idx = fragment_idx
+        frame_id = atom.frame_id,
+        molecule_idx = atom.molecule_idx,
+        chain_idx = atom.chain_idx,
+        fragment_idx = atom.fragment_idx,
+        kwargs...
     )
-    sys
 end
 
 @enumx FullNameType begin
@@ -430,20 +428,18 @@ end
 Decides if two atoms are bound to each other.
 Hydrogen bonds (`has_flag(bond, :TYPE__HYDROGEN)`) are ignored.
 """
-function is_bound_to(a1::Atom, a2::Atom)
+function is_bound_to(a1::Atom{T}, a2::Atom{T}) where T
     s = parent(a1)
 
-    if s != parent(a2)
+    if s !== parent(a2)
         return false
     end
 
-    return !isnothing(
-        findfirst(
-            b ->
-                ((b.a1 == a1.idx) && (b.a2 == a2.idx)) ||
-                ((b.a1 == a2.idx) && (b.a2 == a1.idx)),
-            non_hydrogen_bonds(s)
-        )
+    return any(
+        b ->
+            ((b.atom1_idx == a1.idx) && (b.atom2_idx == a2.idx)) ||
+            ((b.atom1_idx == a2.idx) && (b.atom2_idx == a1.idx)),
+        non_hydrogen_bonds(s)
     )
 end
 
@@ -456,8 +452,8 @@ Two atoms are geminal if they do not share a common bond but both have a
 bond to a third atom. For example the two hydrogen atoms in water are geminal.
 Hydrogen bonds (`has_flag(bond, :TYPE__HYDROGEN)`) are ignored.
 """
-function is_geminal(a1::Atom, a2::Atom)
-    if a1 == a2
+function is_geminal(a1::Atom{T}, a2::Atom{T}) where T
+    if a1 === a2
         return false
     end
 
@@ -476,8 +472,8 @@ Decides if two atoms are vicinal.
 Two atoms are vicinal if they are separated by three bonds (1-4 position).
 Hydrogen bonds (`has_flag(bond, :TYPE__HYDROGEN)`) are ignored.
 """
-function is_vicinal(a1::Atom, a2::Atom)
-    if a1 == a2
+function is_vicinal(a1::Atom{T}, a2::Atom{T}) where T
+    if a1 === a2
         return false
     end
 

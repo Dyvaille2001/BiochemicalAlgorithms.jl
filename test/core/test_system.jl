@@ -1,10 +1,7 @@
 @testitem "System" begin
     for T in [Float32, Float64]
         testsys = load_pdb(ball_data_path("../test/data/1tgh.pdb"), T)
-        fdb = FragmentDB{T}()
-        normalize_names!(testsys, fdb)
-        reconstruct_fragments!(testsys, fdb)
-        build_bonds!(testsys, fdb)
+        infer_topology!(testsys, FragmentDB{T}())
 
         @test natoms(testsys) == 3778
         @test nbonds(testsys) == 3839
@@ -14,8 +11,8 @@
         ct = chains(testsys)
         @test nfragments.(ct) == [12, 12, 180, 5, 1, 12]
         @test nfragments.(ct; variant = FragmentVariant.None) == [0, 0, 0, 5, 1, 12]
-        @test nnucleotides.(ct) == [0, 0, 0, 0, 0, 0]
-        @test nresidues.(ct) == [12, 12, 180, 0, 0, 0]
+        @test nnucleotides.(ct) == [12, 12, 0, 0, 0, 0]
+        @test nresidues.(ct) == [0, 0, 180, 0, 0, 0]
 
         # empty!
         sys = deepcopy(testsys)
@@ -139,22 +136,22 @@
         @test size(bt2) == size(bt)
         @test bt2.idx == sort(bt.idx; rev = true)
 
-        bt2 = sort(bt; by = bond -> bond.a2)
+        bt2 = sort(bt; by = bond -> bond.atom2_idx)
         @test bt2 isa BondTable{T}
         @test size(bt2) == size(bt)
-        @test bt2.a2 == sort(bt.a2)
+        @test bt2.atom2_idx == sort(bt.atom2_idx)
 
         @test sort!(bt; rev = true) === bt
         @test bt.idx == sort(bonds(sys)[100:2:200].idx; rev = true)
 
-        @test sort!(bt; by = bond -> bond.a2) === bt
-        @test bt.a2 == sort(bonds(sys)[100:2:200].a2)
+        @test sort!(bt; by = bond -> bond.atom2_idx) === bt
+        @test bt.atom2_idx == sort(bonds(sys)[100:2:200].atom2_idx)
 
         @test sort_bonds!(sys; rev = true) === sys
         @test issorted(bonds(sys).idx; rev = true)
 
-        @test sort_bonds!(sys; by = bond -> bond.a2) === sys
-        @test issorted(bonds(sys).a2)
+        @test sort_bonds!(sys; by = bond -> bond.atom2_idx) === sys
+        @test issorted(bonds(sys).atom2_idx)
 
         ## delete! + revalidate_indices!
         sys = deepcopy(testsys)
@@ -515,5 +512,50 @@
         @test nchains(sys) == 6
         @test nsecondary_structures(sys) == 30
         @test nfragments(sys) == 220
+    end
+end
+
+@testitem "System/frames" begin
+    for T in [Float32, Float64]
+        sys = load_pdb(ball_data_path("../test/data/AlaAla.pdb"), T)
+        @test nframes(sys) == 1
+        @test frame_ids(sys) == [1]
+
+        # empty system
+        sys2 = System{T}()
+        @test nframes(sys2) == 0
+        @test isempty(frame_ids(sys2))
+
+        # multi-model system
+        sys = load_pdb(ball_data_path("../test/data/1X0I.pdb"), T)
+        @test nframes(sys) == 2
+        @test frame_ids(sys) == [1, 2]
+        @test natoms(sys) == 1824
+        @test natoms(sys; frame_id = 1) == 1824
+        @test natoms(sys; frame_id = 2) == 1824
+        @test nbonds(sys) == 129
+        @test nbonds(sys; frame_id = 1) == 129
+        @test nbonds(sys; frame_id = 2) == 0   # https://github.com/hildebrandtlab/BiochemicalAlgorithms.jl/issues/343
+
+        select_frame!(sys, 2)
+        fdb = FragmentDB{T}()
+        infer_topology!(sys, fdb)
+        @test natoms(sys) == 3603
+        @test natoms(sys; frame_id = 1) == 1824
+        @test natoms(sys; frame_id = 2) == 3603
+        @test nbonds(sys) == 3490
+        @test nbonds(sys; frame_id = 1) == 129
+        @test nbonds(sys; frame_id = 2) == 3490
+
+        select_frame!(sys, 1)
+        copy_frame!(sys, 3)
+        @test natoms(sys) == 1824
+        @test natoms(sys; frame_id = 1) == 1824
+        @test natoms(sys; frame_id = 2) == 3603
+        @test natoms(sys; frame_id = 3) == 1824
+        @test nbonds(sys) == 129
+        @test nbonds(sys; frame_id = 1) == 129
+        @test nbonds(sys; frame_id = 2) == 3490
+        @test nbonds(sys; frame_id = 3) == 129
     end
 end

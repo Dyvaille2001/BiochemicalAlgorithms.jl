@@ -34,17 +34,18 @@ end
 function filter_atoms(fn, mol::AbstractAtomContainer; name::AbstractString="", adjacent_bonds::Bool=false)
     atom_view = filter(fn, atoms(mol))
     idxset = Set(atom_view.idx)
-    bond_view = filter(row ->
-        adjacent_bonds ? row.a1 ∈ idxset || row.a2 ∈ idxset
-                        : row.a1 ∈ idxset && row.a2 ∈ idxset,
-        bonds(mol)
+    bond_view = filter(b ->
+        adjacent_bonds ? b.atom1_idx ∈ idxset || b.atom2_idx ∈ idxset
+                       : b.atom1_idx ∈ idxset && b.atom2_idx ∈ idxset,
+        bonds(parent(mol))
     )
     Substructure(name, mol, atom_view, bond_view)
 end
 
 function Base.copy(substruct::Substructure{T}) where T
     sys = System{T}(substruct.name)
-    sys._curr_idx = sys._curr_idx
+    sys._current_idx = parent(substruct)._current_idx
+    sys._current_frame = parent(substruct)._current_frame
 
     sys.properties = copy(substruct.properties)
     sys.flags      = copy(substruct.parent.flags)
@@ -68,16 +69,14 @@ Returns an `AtomTable` for all of the given system's atoms matching the given cr
 private atom fields.
 """
 @inline function atoms(substruct::Substructure{T};
-    frame_id::MaybeInt = 1,
+    frame_id::MaybeInt = selected_frame(parent(substruct)),
     molecule_idx::Union{MaybeInt, Some{Nothing}} = nothing,
     chain_idx::Union{MaybeInt, Some{Nothing}} = nothing,
-    secondary_structure_idx::Union{MaybeInt, Some{Nothing}} = nothing,
     fragment_idx::Union{MaybeInt, Some{Nothing}} = nothing
 ) where T
     filter(row ->
         (isnothing(frame_id)                || row.frame_id == frame_id) &&
         (isnothing(molecule_idx)            || row.molecule_idx == something(molecule_idx)) &&
-        (isnothing(secondary_structure_idx) || row.secondary_structure_idx == something(secondary_structure_idx)) &&
         (isnothing(chain_idx)               || row.chain_idx == something(chain_idx)) &&
         (isnothing(fragment_idx)            || row.fragment_idx == something(fragment_idx)),
         substruct._atoms
@@ -86,39 +85,55 @@ end
 
 @inline function bonds(substruct::Substructure; kwargs...)
     aidx = Set(atoms(substruct; kwargs...).idx)
-    filter(row -> row.a1 in aidx || row.a2.idx, substruct._bonds)
+    filter(row -> row.atom1_idx in aidx || row.atom2_idx in aidx, substruct._bonds)
 end
 
 @inline function molecules(substruct::Substructure; kwargs...)
     midx = Set(atoms(substruct; kwargs...).molecule_idx)
-    filter(row -> row.idx in midx, molecules(substruct.parent))
+    filter(row -> row.idx in midx, molecules(parent(substruct)))
+end
+
+@inline function proteins(substruct::Substructure; kwargs...)
+    midx = Set(atoms(substruct; kwargs...).molecule_idx)
+    filter(row -> row.idx in midx, proteins(parent(substruct)))
 end
 
 @inline function chains(substruct::Substructure; kwargs...)
     cidx = Set(atoms(substruct; kwargs...).chain_idx)
-    filter(row -> row.idx in cidx, chains(substruct.parent))
+    filter(row -> row.idx in cidx, chains(parent(substruct)))
 end
 
-@inline function secondary_structures(substruct::Substructure; kwargs...)
-    cidx = Set(atoms(substruct; kwargs...).chain_idx)
-    filter(row -> row.idx in cidx, secondary_structures(substruct.parent))
+@inline function secondary_structures(substruct::Substructure{T}; kwargs...) where T
+    fidx = setdiff(Set(atoms(substruct; kwargs...).fragment_idx), Set([nothing]))
+    ft = FragmentTable{T}(parent(substruct), collect(Int, fidx))
+    secondary_structures(ft)
 end
 
 @inline function fragments(substruct::Substructure; kwargs...)
     fidx = Set(atoms(substruct; kwargs...).fragment_idx)
-    filter(row -> row.idx in fidx, fragments(substruct.parent))
+    filter(row -> row.idx in fidx, fragments(parent(substruct)))
 end
 
-@inline function natoms(substruct::Substructure; kwargs...)
-    length(atoms(substruct; kwargs...))
+@inline function residues(substruct::Substructure; kwargs...)
+    fidx = Set(atoms(substruct; kwargs...).fragment_idx)
+    filter(row -> row.idx in fidx, residues(parent(substruct)))
 end
 
-@inline function nbonds(substruct::Substructure; kwargs...)
-    length(bonds(substruct; kwargs...))
+@inline function nucleotides(substruct::Substructure; kwargs...)
+    fidx = Set(atoms(substruct; kwargs...).fragment_idx)
+    filter(row -> row.idx in fidx, nucleotides(parent(substruct)))
 end
 
-@inline function nfragments(substruct::Substructure; kwargs...)
-    length(fragments(substruct; kwargs...))
+# natoms, nbonds, ...
+for comp in (
+    :atoms, :bonds, :molecules, :proteins, :chains,
+    :secondary_structures, :fragments, :residues, :nucleotides
+)
+    @eval begin
+        @inline function $(Symbol("n", comp))(substruct::Substructure; kwargs...)
+            length($(comp)(substruct; kwargs...))
+        end
+    end
 end
 
 @inline Base.parent(substruct::Substructure) = parent(substruct.parent)

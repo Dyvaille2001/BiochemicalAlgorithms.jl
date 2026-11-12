@@ -19,10 +19,7 @@ Force fields in BiochemicalAlgorithms.jl are always set up for a given molecular
 ```{julia}
 sys = load_pdb(ball_data_path("../test/data/AlaAla.pdb"))
 
-fdb = FragmentDB()
-normalize_names!(sys, fdb)
-reconstruct_fragments!(sys, fdb)
-build_bonds!(sys, fdb)
+infer_topology!(sys)
 
 sys
 ```
@@ -57,7 +54,7 @@ The force vectors computed here are directly stored in the underlying system:
 atoms(sys).F   # or, equivalently, atoms(ff.system).F
 ```
 
-The force vectors are given in units of kJ/(mol·Å). Before BiochemicalAlgorithms.jl v0.6, forces were computed in Newton. 
+The force vectors are given in units of kJ/(mol·Å). Before BiochemicalAlgorithms.jl v0.6, forces were computed in Newton.
 
 ## Potential energy computation
 

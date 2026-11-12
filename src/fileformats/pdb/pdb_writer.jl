@@ -18,8 +18,8 @@ unval(::Val{x}) where x = x
 # TODO: we should make this optional
 function fix_nucleotide_name(name::String)
     return name
-    
-    replace(name, 
+
+    replace(name,
             r"^DA$" => "A",
             r"^DC$" => "C",
             r"^DG$" => "G",
@@ -54,9 +54,9 @@ function break_into_continuation_lines(line::String, c::Int = 1)
     end
 end
 
-function write_record(io::IO, pdb_info::PDBInfo, tag_name::String, args...)
+function write_record(io::IO, pdb_info::PDBInfo, tag_name::String, args...; model_number::Int = 1)
     type = RECORD_MAP[tag_name]
-    
+
     # CONECT-records are handled differently
     if type.record_type === RECORD_TYPE__REMARK
         pdb_info.writer_stats.remark_records += 1
@@ -73,14 +73,14 @@ function write_record(io::IO, pdb_info::PDBInfo, tag_name::String, args...)
     elseif type.record_type in [
             RECORD_TYPE__ORIGX1, RECORD_TYPE__ORIGX2, RECORD_TYPE__ORIGX3,
             RECORD_TYPE__SCALE1, RECORD_TYPE__SCALE2, RECORD_TYPE__SCALE3,
-            RECORD_TYPE__MTRIX1, RECORD_TYPE__MTRIX2, RECORD_TYPE__MTRIX3    
+            RECORD_TYPE__MTRIX1, RECORD_TYPE__MTRIX2, RECORD_TYPE__MTRIX3
         ]
         pdb_info.writer_stats.coordinate_transformation_records += 1
-    elseif type.record_type in [RECORD_TYPE__ATOM, RECORD_TYPE__HETATM]
+    elseif type.record_type in [RECORD_TYPE__ATOM, RECORD_TYPE__HETATM] && model_number == 1
         pdb_info.writer_stats.atomic_coordinate_records += 1
-    elseif type.record_type == RECORD_TYPE__TER
+    elseif type.record_type == RECORD_TYPE__TER && model_number == 1
         pdb_info.writer_stats.ter_records += 1
-    else type.record_type == RECORD_TYPE__SEQRES
+    elseif type.record_type == RECORD_TYPE__SEQRES
         pdb_info.writer_stats.seqres_records += 1
     end
 
@@ -149,6 +149,10 @@ function write_seqres(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) w
     for chain in chains(ac)
         res = fragments(chain)
         nres = length(res)
+
+        # chain needs at least one residue
+        nresidues(chain) == 0 && continue
+
         # each chain is stored in groups of 13 residues
         for (i, rs) in enumerate(Iterators.partition(res, 13))
             rs = vcat(map(r -> fix_nucleotide_name(r.name), rs), repeat([""], 13 - length(rs)))
@@ -168,6 +172,8 @@ function write_title_section(io::IO, pdb_info::PDBInfo)
     write_records(io, pdb_info, Val(RECORD_TYPE__OBSLTE))
     # --- TITLE ---
     write_records(io, pdb_info, Val(RECORD_TYPE__TITLE))
+    # --- SPLIT ---
+    write_records(io, pdb_info, Val(RECORD_TYPE__SPLIT))
     # --- CAVEAT ---
     write_records(io, pdb_info, Val(RECORD_TYPE__CAVEAT))
     # --- COMPND ---
@@ -178,6 +184,10 @@ function write_title_section(io::IO, pdb_info::PDBInfo)
     write_records(io, pdb_info, Val(RECORD_TYPE__KEYWDS))
     # --- EXPDTA ---
     write_records(io, pdb_info, Val(RECORD_TYPE__EXPDTA))
+    # --- NUMMDL ---
+    write_records(io, pdb_info, Val(RECORD_TYPE__NUMMDL))
+    # --- MDLTYP ---
+    write_records(io, pdb_info, Val(RECORD_TYPE__MDLTYP))
     # --- AUTHOR ---
     write_records(io, pdb_info, Val(RECORD_TYPE__AUTHOR))
     # --- REVDAT ---
@@ -190,9 +200,21 @@ function write_title_section(io::IO, pdb_info::PDBInfo)
     write_records(io, pdb_info, Val(RECORD_TYPE__REMARK))
 end
 
+function write_dbref12_section(io::IO, pdb_info::PDBInfo)
+    dbref1 = extract_records(Val(RECORD_TYPE__DBREF1), pdb_info)
+    dbref2 = extract_records(Val(RECORD_TYPE__DBREF2), pdb_info)
+
+    for (db1, db2) in zip(dbref1, dbref2)
+        write_record(io, pdb_info, db1)
+        write_record(io, pdb_info, db2)
+    end
+end
+
 function write_primary_structure_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <:Real}
     # --- DBREF ---
     write_records(io, pdb_info, Val(RECORD_TYPE__DBREF))
+    # --- DBREF1/2 ---
+    write_dbref12_section(io, pdb_info)
     # --- SEQADV ---
     write_records(io, pdb_info, Val(RECORD_TYPE__SEQADV))
     # --- SEQRES ---
@@ -214,7 +236,7 @@ end
 
 function write_helix_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <:Real}
     helices = filter(
-        ss -> ss.type == SecondaryStructureElement.Helix, 
+        ss -> ss.type == SecondaryStructureElement.Helix,
         secondary_structures(ac)
     )
 
@@ -227,8 +249,8 @@ function write_helix_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContaine
         helix_class   = get_property(helix, :HELIX_CLASS, 1)
         helix_comment = get_property(helix, :COMMENT,    "")
 
-        write_record(io, pdb_info, RECORD_TAG_HELIX, 
-            helix_number, helix.name, 
+        write_record(io, pdb_info, RECORD_TAG_HELIX,
+            helix_number, helix.name,
             residue_details(helix_start)...,
             residue_details(helix_end)...,
             helix_class, helix_comment,
@@ -238,26 +260,28 @@ function write_helix_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContaine
 end
 
 function write_sheet_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <:Real}
-    # this uses the same convention as BALL did, but we might have to 
+    # this uses the same convention as BALL did, but we might have to
     # check this eventually...
     # this is the original BALL comment:
-    #   First, count the number of strands. Not exactly what 
+    #   First, count the number of strands. Not exactly what
 	#   we need, but it'll do for now. We would have to count
 	#   the strands per sheet for every distinct sheet ID and
 	#   account for barrels (closed sheets: last strand = first strand)
 	#   as well.
 
     strands = filter(
-        ss -> ss.type == SecondaryStructureElement.Strand, 
+        ss -> ss.type == SecondaryStructureElement.Strand,
         secondary_structures(ac)
     )
 
+    records = []
+    strands_per_sheet   = Dict{SubString{String}, Int}()
     for strand in strands
         rs = fragments(strand)
 
         name_parts = split(strand.name, ":")
 
-        strand_number = 
+        strand_number =
             if length(name_parts) == 1
                 1
             else
@@ -267,34 +291,24 @@ function write_sheet_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContaine
                     1
                 end
             end
-        strand_name = name_parts[1]
+        sheet_name = name_parts[1]
+        strands_per_sheet[sheet_name] = max(strand_number, get(strands_per_sheet, sheet_name, 1))
 
         strand_start = first(rs)
         strand_end   =  last(rs)
 
         strand_sense = get_property(strand, :STRAND_SENSE, 0)
 
+        push!(records, (strand_number, sheet_name, strand_start, strand_end, strand_sense))
+    end
+
+    sort!(records; by = t -> (t[2], t[1]))
+    for (strand_number, sheet_name, strand_start, strand_end, strand_sense) in records
         write_record(io, pdb_info, Val(RECORD_TYPE__SHEET),
-            strand_number, strand_name, length(strands),
+            strand_number, sheet_name, strands_per_sheet[sheet_name],
             residue_details(strand_start)...,
             residue_details(strand_end)...,
             strand_sense
-        )
-    end
-end
-
-function write_turn_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <:Real}
-    turns = filter(
-        ss -> ss.type == SecondaryStructureElement.Turn, 
-        secondary_structures(ac)
-    )
-
-    for (turn_number, turn) in enumerate(turns)
-        write(io, pdb_info, RECORD_TAG_TURN, 
-            turn_number, turn.name,
-            residue_details(first(turn))...,
-            residue_details(last(turn))...,
-            get_property(turn, :COMMENT, "")
         )
     end
 end
@@ -304,8 +318,6 @@ function write_secondary_structure_section(io::IO, pdb_info::PDBInfo, ac::Abstra
     write_helix_section(io, pdb_info, ac)
     # --- SHEET ---
     write_sheet_section(io, pdb_info, ac)
-    # --- TURN ---
-    write_turn_section(io, pdb_info, ac)
 end
 
 function write_ssbond_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <:Real}
@@ -320,8 +332,8 @@ function write_ssbond_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContain
         symmetry_operator_1 = get_property(ssbond, :SYMMETRY_OPERATOR_1, 0)
         bond_length = get_property(ssbond, :BOND_LENGTH, 0.0)
 
-        write_record(io, pdb_info, RECORD_TAG_SSBOND, 
-            ssbond_number, 
+        write_record(io, pdb_info, RECORD_TAG_SSBOND,
+            ssbond_number,
             atom_details(first_partner)...,
             atom_details(second_partner)...,
             symmetry_operator_0, symmetry_operator_1, bond_length
@@ -334,10 +346,6 @@ function write_connectivity_annotation_section(io::IO, pdb_info::PDBInfo, ac::Ab
     write_ssbond_section(io, pdb_info, ac)
     # --- LINK ---
     write_records(io, pdb_info, Val(RECORD_TYPE__LINK))
-    # --- HYDBND ---
-    write_records(io, pdb_info, Val(RECORD_TYPE__HYDBND))
-    # --- SLTBRG ---
-    write_records(io, pdb_info, Val(RECORD_TYPE__SLTBRG))
     # --- CISPEP ---
     write_records(io, pdb_info, Val(RECORD_TYPE__CISPEP))
 end
@@ -368,22 +376,20 @@ function write_crystallographic_section(io::IO, pdb_info::PDBInfo)
     write_records(io, pdb_info, Val(RECORD_TYPE__MTRIX2))
     # --- MTRIX3 ---
     write_records(io, pdb_info, Val(RECORD_TYPE__MTRIX3))
-    # --- TVECT ---
-    write_records(io, pdb_info, Val(RECORD_TYPE__TVECT))
 end
 
-function write_atom_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <:Real}
+function write_atom_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}; model_number::Int = 1) where {T <:Real}
  # we iterate over all atoms and decide if we have to write an ATOM, HETATM, or TER record
 
         last_atom = nothing
         atom_number = 1
 
-        for atom in atoms(ac)
+        for atom in atoms(ac; frame_id = model_number)
             # if the last atom was in a different chain, we have to write a TER record
             if !isnothing(last_atom) && (parent_chain(last_atom) !== parent_chain(atom))
-                write_record(io, pdb_info, RECORD_TAG_TER, atom_number, atom_details(last_atom)...)        
+                write_record(io, pdb_info, RECORD_TAG_TER, atom_number, atom_details(last_atom)...)
                 atom_number += 1
-            end 
+            end
 
             tag = (isnothing(parent_fragment(atom)) || is_hetero_atom(atom)) ? RECORD_TAG_HETATM : RECORD_TAG_ATOM
 
@@ -395,25 +401,26 @@ function write_atom_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer
             atom_name = strip(atom.name)
             element_symbol = string(atom.element)
             alt_loc_id = get_property(atom, :alternate_location_id, "")
-        
+
             if (length(atom_name) < 4) && startswith(atom_name, element_symbol) && (length(element_symbol) == 1)
                 atom_name = " " * atom_name
             end
-            
-            write_record(io, pdb_info, tag, 
-                  atom_number, atom_name, alt_loc_id, 
+
+            write_record(io, pdb_info, tag,
+                  atom_number, atom_name, alt_loc_id,
                   atom_details(atom)..., atom.r...,
                   get_property(atom, :occupancy, 1.0),
                   get_property(atom, :tempfactor, 0.0),
-                  "", element_symbol, atom.formal_charge > 0 ? string(atom.formal_charge) : "")
+                  element_symbol, atom.formal_charge > 0 ? string(atom.formal_charge) : "";
+                  model_number)
 
             atom_number += 1
             last_atom = atom
         end
 
         # if there were any atoms, write the final TER record
-        if natoms(ac) > 0
-            write_record(io, pdb_info, RECORD_TAG_TER, atom_number, atom_details(atoms(ac)[end])...)
+        if natoms(ac; frame_id = model_number) > 0
+            write_record(io, pdb_info, RECORD_TAG_TER, atom_number, atom_details(last(atoms(ac; frame_id = model_number)))...; model_number)
         end
 end
 
@@ -427,7 +434,7 @@ function write_coordinate_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomCon
 
     # first, figure out if we have to write multiple models...
     models = frame_ids(ac)
-    
+
     if pdb_info.selected_model != -1
         models = collect(Iterators.filter(m -> m == pdb_info.selected_model, models))
     end
@@ -437,10 +444,10 @@ function write_coordinate_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomCon
     for model in models
         if multiple_models
             # write a models record
-            write_record(io, pdb_info, RECORD_TAG_MODEL, pdb_info.selected_model)
+            write_record(io, pdb_info, RECORD_TAG_MODEL, model)
         end
 
-        write_atom_section(io, pdb_info, ac)
+        write_atom_section(io, pdb_info, ac; model_number = model)
 
         if multiple_models
             # write a model record
@@ -455,7 +462,7 @@ function write_connectivity_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomC
              has_flag(b, :TYPE__UNKNOWN)  ||
              has_flag(b, :TYPE__PEPTIDE)  ||
              has_flag(b, :TYPE__DISULPHIDE_BOND))
-        
+
             a, b = get_partners(b)
 
             if is_hetero_atom(a) || is_hetero_atom(b)
@@ -465,12 +472,12 @@ function write_connectivity_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomC
             ar = parent_fragment(a)
             br = parent_fragment(b)
 
-            if ( a.element === Elements.S && 
+            if ( a.element === Elements.S &&
                  b.element === Elements.S &&
-                 !isnothing(ar) && 
+                 !isnothing(ar) &&
                  !isnothing(br) &&
                  ar !== br)
-               
+
                 # we found a disulphide bond
                 # TODO: we should check that we build an SSBOND record, too
                 return true
@@ -487,7 +494,7 @@ function write_connectivity_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomC
     to_connect = Iterators.filter(needs_connect, bonds(ac))
 
     # we need to divide the bonds up into groups of 3, all sharing the first atom
-    bond_groups = groupby(sort(DataFrame(map(b -> (b.a1, b.a2), to_connect)), :1), :1)
+    bond_groups = groupby(sort(DataFrame(map(b -> (b.atom1_idx, b.atom2_idx), to_connect)), :1), :1)
 
     for bg in bond_groups
         for current_partners in Iterators.partition(bg[!, :2], 3)
@@ -502,7 +509,7 @@ end
 function write_bookkeeping_section(io::IO, pdb_info::PDBInfo, ac::AbstractAtomContainer{T}) where {T <: Real}
     writer_stats = pdb_info.writer_stats
 
-    write_record(io, pdb_info, RECORD_TAG_MASTER, 
+    write_record(io, pdb_info, RECORD_TAG_MASTER,
         writer_stats.remark_records, 0,
         writer_stats.het_records, writer_stats.helix_records,
         writer_stats.sheet_records, writer_stats.turn_records,

@@ -75,7 +75,7 @@ function _parse_atoms!(mol::Molecule, compound::JSON.Object, ::Type{T} = Float32
 end
 
 function _parse_bonds!(mol::Molecule, compound::JSON.Object, ::Type{T} = Float32) where {T <: Real}
-    aidx = Dict(a.number => a.idx for a in atoms(parent_system(mol)))
+    atoms_by_number = Dict(a.number => a for a in atoms(parent_system(mol)))
     if haskey(compound, :bonds)
         for i in eachindex(compound.bonds.aid1)
             aid1 = compound.bonds.aid1[i]
@@ -100,9 +100,9 @@ function _parse_bonds!(mol::Molecule, compound::JSON.Object, ::Type{T} = Float32
                 properties[:PCBondAnnotation_for_conformer] = annotations
             end
 
-            Bond(mol,
-                aidx[aid1],
-                aidx[aid2],
+            Bond(
+                atoms_by_number[aid1],
+                atoms_by_number[aid2],
                 (order <= 4) ? BondOrderType(order) : BondOrder.Unknown;
                 properties = properties
             )
@@ -123,21 +123,22 @@ function _parse_props!(mol::Molecule, compound::JSON.Object)
 end
 
 """
-    load_pubchem_json(fname::AbstractString, ::Type{T} = Float32) -> System{T}
+    load_pubchem_json(io::IO, ::Type{T} = Float32) -> System{T}
+    load_pubchem_json(filename::AbstractString, ::Type{T} = Float32) -> System{T}
 
 Read a PubChem JSON file.
 
 !!! note
     Conformers are stored as frames.
 """
-function load_pubchem_json(fname::AbstractString, ::Type{T} = Float32) where {T <: Real}
+function load_pubchem_json(fname_io::Union{AbstractString, IO}, ::Type{T} = Float32) where {T <: Real}
     # TODO: full conversion, adding all properties
 
-    pb = JSON.parse(read(fname, String))
+    pb = JSON.parse(read(fname_io, String))
     sys = System{T}()
     for compound in pb.PC_Compounds
         # for now, use the file name as the name for the molecule
-        mol = Molecule(sys; name = basename(fname) * "_" * string(compound.id.id.cid))
+        mol = Molecule(sys; name = "CID $(compound.id.id.cid)")
         _parse_atoms!(mol, compound, T)
         _parse_bonds!(mol, compound, T)
         _parse_props!(mol, compound)

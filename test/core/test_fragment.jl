@@ -5,7 +5,6 @@
         sys = System{T}()
         mol = Molecule(sys)
         chain = Chain(mol)
-        ss = SecondaryStructure(chain, 1, SecondaryStructureElement.Helix; name="H1")
 
         f1 = Fragment(chain, 1;
             name = "my fragment",
@@ -19,18 +18,7 @@
             name = "my residue"
         )
 
-        f2 = Fragment(ss, 4;
-        name = "my fragment",
-        properties = Properties(:first => 'a', :second => "b"),
-            flags = Flags([:third])
-        )
-        n2 = Nucleotide(ss, 5;
-            name = "my nucleotide"
-        )
-        r2 = Residue(ss, 6;
-            name = "my residue"
-        )
-
+        ss = SecondaryStructure(f1, r1, 1, SecondaryStructureElement.Helix; name="H1")
         ft = fragments(sys)
 
         # AutoHashEquals, copy, and identity
@@ -80,80 +68,54 @@
         @test !isnothing(Tables.rows(ft))
 
         # AbstractArray interface
-        @test size(ft) == (6, 3)
-        @test length(ft) == 6
+        @test size(ft) == (3, 3)
+        @test length(ft) == 3
         @test eltype(ft) == Fragment{T}
-        @test keys(ft) == [1, 2, 3, 4, 5, 6]
+        @test keys(ft) == [1, 2, 3]
 
         # getproperty
         @test ft._sys === sys
-        @test ft._idx == [f1.idx, n1.idx, r1.idx,
-                          f2.idx, n2.idx, r2.idx]
+        @test ft._idx == [f1.idx, n1.idx, r1.idx]
 
         @test ft.idx isa AbstractVector{Int}
-        @test ft.idx == [f1.idx, n1.idx, r1.idx,
-                         f2.idx, n2.idx, r2.idx]
+        @test ft.idx == [f1.idx, n1.idx, r1.idx]
         @test ft.number isa AbstractVector{Int}
-        @test ft.number == [f1.number, n1.number, r1.number,
-                            f2.number, n2.number, r2.number]
+        @test ft.number == [f1.number, n1.number, r1.number]
         @test ft.name isa AbstractVector{String}
-        @test ft.name == [f1.name, n1.name, r1.name,
-                          f2.name, n2.name, r2.name]
+        @test ft.name == [f1.name, n1.name, r1.name]
 
         @test ft.properties isa AbstractVector{Properties}
-        @test ft.properties == [f1.properties, n1.properties, r1.properties,
-                                f2.properties, n2.properties, r2.properties]
+        @test ft.properties == [f1.properties, n1.properties, r1.properties]
         @test ft.flags isa AbstractVector{Flags}
-        @test ft.flags == [f1.flags, n1.flags, r1.flags,
-                           f2.flags, n2.flags, r2.flags]
+        @test ft.flags == [f1.flags, n1.flags, r1.flags]
         @test ft.variant isa AbstractVector{FragmentVariantType}
-        @test ft.variant == [f1.variant, n1.variant, r1.variant,
-                             f2.variant, n2.variant, r2.variant]
+        @test ft.variant == [f1.variant, n1.variant, r1.variant]
         @test ft.molecule_idx isa AbstractVector{Int}
-        @test ft.molecule_idx == [f1.molecule_idx, n1.molecule_idx, r1.molecule_idx,
-                                  f2.molecule_idx, n2.molecule_idx, r2.molecule_idx]
+        @test ft.molecule_idx == [f1.molecule_idx, n1.molecule_idx, r1.molecule_idx]
         @test ft.chain_idx isa AbstractVector{Int}
-        @test ft.chain_idx == [f1.chain_idx, n1.chain_idx, r1.chain_idx,
-                               f2.chain_idx, n2.chain_idx, r2.chain_idx]
-        @test ft.secondary_structure_idx isa AbstractVector{MaybeInt}
-        @test ft.secondary_structure_idx ==
-            [f1.secondary_structure_idx, n1.secondary_structure_idx, r1.secondary_structure_idx,
-             f2.secondary_structure_idx, n2.secondary_structure_idx, r2.secondary_structure_idx]
-
+        @test ft.chain_idx == [f1.chain_idx, n1.chain_idx, r1.chain_idx]
 
         # Tables.getcolumn
         @test Tables.getcolumn(ft, :idx) isa AbstractVector{Int}
         @test Tables.getcolumn(ft, 1) isa AbstractVector{Int}
-        @test Tables.getcolumn(ft, :idx) == Tables.getcolumn(ft, 1) == [f1.idx, n1.idx, r1.idx,
-                                                                        f2.idx, n2.idx, r2.idx]
+        @test Tables.getcolumn(ft, :idx) == Tables.getcolumn(ft, 1) == [f1.idx, n1.idx, r1.idx]
         @test Tables.getcolumn(ft, :number) isa AbstractVector{Int}
         @test Tables.getcolumn(ft, 2) isa AbstractVector{Int}
-        @test Tables.getcolumn(ft, :number) == Tables.getcolumn(ft, 2) == [f1.number, n1.number, r1.number,
-                                                                           f2.number, n2.number, r2.number]
+        @test Tables.getcolumn(ft, :number) == Tables.getcolumn(ft, 2) == [f1.number, n1.number, r1.number]
         @test Tables.getcolumn(ft, :name) isa AbstractVector{String}
         @test Tables.getcolumn(ft, 3) isa AbstractVector{String}
-        @test Tables.getcolumn(ft, :name) == Tables.getcolumn(ft, 3) == [f1.name, n1.name, r1.name,
-                                                                         f2.name, n2.name, r2.name]
+        @test Tables.getcolumn(ft, :name) == Tables.getcolumn(ft, 3) == [f1.name, n1.name, r1.name]
 
         @test Tables.getcolumn(ft, :properties) isa AbstractVector{Properties}
-        @test Tables.getcolumn(ft, :properties) == [f1.properties, n1.properties, r1.properties,
-                                                    f2.properties, n2.properties, r2.properties]
+        @test Tables.getcolumn(ft, :properties) == [f1.properties, n1.properties, r1.properties]
         @test Tables.getcolumn(ft, :flags) isa AbstractVector{Flags}
-        @test Tables.getcolumn(ft, :flags) == [f1.flags, n1.flags, r1.flags,
-                                               f2.flags, n2.flags, r2.flags]
+        @test Tables.getcolumn(ft, :flags) == [f1.flags, n1.flags, r1.flags]
         @test Tables.getcolumn(ft, :variant) isa AbstractVector{FragmentVariantType}
-        @test Tables.getcolumn(ft, :variant) == [f1.variant, n1.variant, r1.variant,
-                                                 f2.variant, n2.variant, r2.variant]
+        @test Tables.getcolumn(ft, :variant) == [f1.variant, n1.variant, r1.variant]
         @test Tables.getcolumn(ft, :molecule_idx) isa AbstractVector{Int}
-        @test Tables.getcolumn(ft, :molecule_idx) == [f1.molecule_idx, n1.molecule_idx, r1.molecule_idx,
-                                                      f2.molecule_idx, n2.molecule_idx, r2.molecule_idx]
+        @test Tables.getcolumn(ft, :molecule_idx) == [f1.molecule_idx, n1.molecule_idx, r1.molecule_idx]
         @test Tables.getcolumn(ft, :chain_idx) isa AbstractVector{Int}
-        @test Tables.getcolumn(ft, :chain_idx) == [f1.chain_idx, n1.chain_idx, r1.chain_idx,
-                                                   f2.chain_idx, n2.chain_idx, r2.chain_idx]
-        @test Tables.getcolumn(ft, :secondary_structure_idx) isa AbstractVector{MaybeInt}
-        @test Tables.getcolumn(ft, :secondary_structure_idx) ==
-            [f1.secondary_structure_idx, n1.secondary_structure_idx, r1.secondary_structure_idx,
-             f2.secondary_structure_idx, n2.secondary_structure_idx, r2.secondary_structure_idx]
+        @test Tables.getcolumn(ft, :chain_idx) == [f1.chain_idx, n1.chain_idx, r1.chain_idx]
 
         # setproperty!
         @test_throws ErrorException ft.idx = [999, 998, 997]
@@ -165,17 +127,13 @@
         @test_throws ErrorException ft.variant = [FragmentVariant.Residue, FragmentVariant.Residue, FragmentVariant.Residue]
         @test_throws ErrorException ft.molecule_idx = [993, 992, 991]
         @test_throws ErrorException ft.chain_idx = [990, 989, 988]
-        @test_throws ErrorException ft.secondary_structure_idx = [987, 986, 985]
 
         # getindex
         @test ft[1] === f1
         @test ft[2] === n1
         @test ft[3] === r1
-        @test ft[4] === f2
-        @test ft[5] === n2
-        @test ft[6] === r2
         @test_throws BoundsError ft[0]
-        @test_throws BoundsError ft[7]
+        @test_throws BoundsError ft[4]
 
         ft2 = ft[:]
         @test ft2 isa FragmentTable{T}
@@ -188,7 +146,7 @@
 
         ft2 = ft[:, [:idx, :flags]]
         @test ft2 isa FragmentTable{T}
-        @test size(ft2) == (6, 2)
+        @test size(ft2) == (3, 2)
         @test Tables.columnnames(ft2) == [:idx, :flags]
         @test Tables.schema(ft2).names == (:idx, :flags)
         @test Tables.schema(ft2).types == (Vector{Int}, Vector{Flags})
@@ -210,10 +168,10 @@
         @test ft2 isa FragmentTable{T}
         @test length(ft2) == 0
 
-        ft2 = ft[ft.idx .== f2.idx]
+        ft2 = ft[ft.idx .== f1.idx]
         @test ft2 isa FragmentTable{T}
         @test length(ft2) == 1
-        @test only(ft2) === f2
+        @test only(ft2) === f1
 
         # filter
         @test filter(_ -> true, ft) == ft
@@ -222,7 +180,7 @@
         # collect
         fv = collect(ft)
         @test fv isa Vector{Fragment{T}}
-        @test length(fv) == 6
+        @test length(fv) == 3
 
         # atoms
         @test length(atoms(ft)) == 0
@@ -238,16 +196,20 @@
         @test length(bonds(ft)) == 0
         @test nbonds(ft) == 0
 
-        Bond(sys, a1.idx, a2.idx, BondOrder.Single)
-        Bond(sys, a2.idx, a3.idx, BondOrder.Double)
+        Bond(a1, a2, BondOrder.Single)
+        Bond(a2, a3, BondOrder.Double)
         @test length(bonds(ft)) == 2
         @test nbonds(ft) == 2
 
         # fragments
-        @test nfragments(ft) == 6
-        @test nfragments(ft; variant = FragmentVariant.None) == 2
-        @test nnucleotides(ft) == 2
-        @test nresidues(ft) == 2
+        @test nfragments(ft) == 3
+        @test nfragments(ft; variant = FragmentVariant.None) == 1
+        @test nnucleotides(ft) == 1
+        @test nresidues(ft) == 1
+
+        # secondary structures
+        @test length(secondary_structures(ft)) == 1
+        @test nsecondary_structures(ft) == 1
     end
 end
 
@@ -690,16 +652,13 @@ end
     for T in [Float32, Float64]
         sys = System{T}()
         chain = Chain(Molecule(sys))
-        ss = SecondaryStructure(chain, 1, SecondaryStructureElement.Helix; name="H1")
 
         # constructors + parent
         frag = Fragment(chain, 1)
         nuc = Nucleotide(chain, 2)
         res = Residue(chain, 3)
 
-        frag2 = Fragment(ss, 4)
-        nuc2 = Nucleotide(ss, 5)
-        res2 = Residue(ss, 6)
+        ss = SecondaryStructure(frag, res, 1, SecondaryStructureElement.Helix; name="H1")
 
         # fragment_by_idx
         @test_throws KeyError fragment_by_idx(sys, -1)
@@ -709,22 +668,16 @@ end
         @test fragment_by_idx(sys, nuc.idx) == nuc
         @test fragment_by_idx(sys, res.idx) isa Fragment{T}
         @test fragment_by_idx(sys, res.idx) == res
-        @test fragment_by_idx(sys, frag2.idx) isa Fragment{T}
-        @test fragment_by_idx(sys, frag2.idx) == frag2
-        @test fragment_by_idx(sys, nuc2.idx) isa Fragment{T}
-        @test fragment_by_idx(sys, nuc2.idx) == nuc2
-        @test fragment_by_idx(sys, res2.idx) isa Fragment{T}
-        @test fragment_by_idx(sys, res2.idx) == res2
 
         # fragments
         ft = fragments(sys)
         @test ft isa FragmentTable{T}
-        @test length(ft) == 6
-        @test length(fragments(sys)) == 6
+        @test length(ft) == 3
+        @test length(fragments(sys)) == 3
 
         # nfragments
         @test nfragments(sys) isa Int
-        @test nfragments(sys) == 6
+        @test nfragments(sys) == 3
 
         # delete!
         Bond(Atom(frag, 1, Elements.H), Atom(frag, 2, Elements.C), BondOrder.Single)
@@ -733,10 +686,10 @@ end
         @test nmolecules(sys) == 1
         @test nchains(sys) == 1
         @test nsecondary_structures(sys) == 1
-        @test nfragments(sys) == 6
-        @test nfragments(sys; variant = FragmentVariant.None) == 2
-        @test nnucleotides(sys) == 2
-        @test nresidues(sys) == 2
+        @test nfragments(sys) == 3
+        @test nfragments(sys; variant = FragmentVariant.None) == 1
+        @test nnucleotides(sys) == 1
+        @test nresidues(sys) == 1
 
         @test delete!(frag; keep_atoms = true) === nothing
         @test natoms(sys) == 2
@@ -744,10 +697,10 @@ end
         @test nmolecules(sys) == 1
         @test nchains(sys) == 1
         @test nsecondary_structures(sys) == 1
-        @test nfragments(sys) == 5
-        @test nfragments(sys; variant = FragmentVariant.None) == 1
-        @test nnucleotides(sys) == 2
-        @test nresidues(sys) == 2
+        @test nfragments(sys) == 2
+        @test nfragments(sys; variant = FragmentVariant.None) == 0
+        @test nnucleotides(sys) == 1
+        @test nresidues(sys) == 1
         @test_throws KeyError frag.idx
         @test all(isnothing, atoms(sys).fragment_idx)
 
@@ -757,10 +710,10 @@ end
         @test nmolecules(sys) == 1
         @test nchains(sys) == 1
         @test nsecondary_structures(sys) == 1
-        @test nfragments(sys) == 5
-        @test nfragments(sys; variant = FragmentVariant.None) == 1
-        @test nnucleotides(sys) == 2
-        @test nresidues(sys) == 2
+        @test nfragments(sys) == 2
+        @test nfragments(sys; variant = FragmentVariant.None) == 0
+        @test nnucleotides(sys) == 1
+        @test nresidues(sys) == 1
 
         @test delete!(nuc; keep_atoms = false) === nothing
         @test natoms(sys) == 3
@@ -768,10 +721,10 @@ end
         @test nmolecules(sys) == 1
         @test nchains(sys) == 1
         @test nsecondary_structures(sys) == 1
-        @test nfragments(sys) == 4
-        @test nfragments(sys; variant = FragmentVariant.None) == 1
-        @test nnucleotides(sys) == 1
-        @test nresidues(sys) == 2
+        @test nfragments(sys) == 1
+        @test nfragments(sys; variant = FragmentVariant.None) == 0
+        @test nnucleotides(sys) == 0
+        @test nresidues(sys) == 1
         @test_throws KeyError nuc.idx
     end
 end
@@ -982,7 +935,7 @@ end
         @test nbonds(frag) == 0
         @test nbonds(frag) == nbonds(sys; fragment_idx = frag.idx)
 
-        Bond(frag, Atom(frag, 1, Elements.H).idx, Atom(frag, 2, Elements.C).idx, BondOrder.Single)
+        Bond(Atom(frag, 1, Elements.H), Atom(frag, 2, Elements.C), BondOrder.Single)
         @test length(bonds(frag)) == 1
         @test bonds(frag) == bonds(sys; fragment_idx = frag.idx)
         @test nbonds(frag) == 1
@@ -1196,7 +1149,7 @@ end
         @test nbonds(nuc) == 0
         @test nbonds(nuc) == nbonds(sys, fragment_idx = nuc.idx)
 
-        Bond(nuc, Atom(nuc, 1, Elements.H).idx, Atom(nuc, 2, Elements.C).idx, BondOrder.Single)
+        Bond(Atom(nuc, 1, Elements.H), Atom(nuc, 2, Elements.C), BondOrder.Single)
         @test length(bonds(nuc)) == 1
         @test bonds(nuc) == bonds(sys, fragment_idx = nuc.idx)
         @test nbonds(nuc) == 1
@@ -1410,7 +1363,7 @@ end
         @test nbonds(res) == 0
         @test nbonds(res) == nbonds(sys, fragment_idx = res.idx)
 
-        Bond(res, Atom(res, 1, Elements.H).idx, Atom(res, 2, Elements.C).idx, BondOrder.Single)
+        Bond(Atom(res, 1, Elements.H), Atom(res, 2, Elements.C), BondOrder.Single)
         @test length(bonds(res)) == 1
         @test bonds(res) == bonds(sys, fragment_idx = res.idx)
         @test nbonds(res) == 1
@@ -1551,4 +1504,113 @@ end
      end
 end
 
+@testitem "Fragment/navigation" begin
+    for T in [Float32, Float64]
+        fdb = FragmentDB{T}()
+        sys = load_hinfile(ball_data_path("../test/data/AlaGlySer.hin"), T)
+        normalize_names!(sys, fdb)
+        label_terminal_fragments!(sys, fdb)
 
+        frags = collect(fragments(sys))
+        @test length(frags) == 3
+
+        # get_previous / get_next
+        @test isnothing(get_previous(frags[1]))
+        @test get_previous(frags[2]) == frags[1]
+        @test get_previous(frags[3]) == frags[2]
+
+        @test get_next(frags[1]) == frags[2]
+        @test get_next(frags[2]) == frags[3]
+        @test isnothing(get_next(frags[3]))
+
+        # is_previous / is_next
+        @test is_previous(frags[1], frags[2])
+        @test !is_previous(frags[2], frags[1])
+        @test !is_previous(frags[1], frags[3])
+
+        @test is_next(frags[2], frags[1])
+        @test !is_next(frags[1], frags[2])
+
+        # is_n_terminal / is_c_terminal (precomputed)
+        @test is_n_terminal(frags[1])
+        @test !is_c_terminal(frags[1])
+        @test !is_n_terminal(frags[2])
+        @test !is_c_terminal(frags[2])
+        @test !is_n_terminal(frags[3])
+        @test is_c_terminal(frags[3])
+
+        # is_n_terminal / is_c_terminal (non-precomputed)
+        @test is_n_terminal(frags[1]; precomputed=false)
+        @test !is_c_terminal(frags[1]; precomputed=false)
+        @test !is_n_terminal(frags[2]; precomputed=false)
+        @test !is_c_terminal(frags[2]; precomputed=false)
+        @test !is_n_terminal(frags[3]; precomputed=false)
+        @test is_c_terminal(frags[3]; precomputed=false)
+
+        # get_full_name with FullNameType variants
+        FNT = BiochemicalAlgorithms.FullNameType
+
+        # N-terminal fragment (ALA)
+        @test get_full_name(frags[1], FNT.NO_VARIANT_EXTENSIONS) == "ALA"
+        @test get_full_name(frags[1], FNT.ADD_VARIANT_EXTENSIONS) == "ALA-N"
+        @test get_full_name(frags[1], FNT.ADD_RESIDUE_ID) == "ALA1"
+        @test get_full_name(frags[1], FNT.ADD_VARIANT_EXTENSIONS_AND_ID) == "ALA-N1"
+        @test get_full_name(frags[1]) == "ALA-N"  # default is ADD_VARIANT_EXTENSIONS
+
+        # middle fragment (GLY) — no terminal extension
+        @test get_full_name(frags[2], FNT.NO_VARIANT_EXTENSIONS) == "GLY"
+        @test get_full_name(frags[2], FNT.ADD_VARIANT_EXTENSIONS) == "GLY"
+
+        # C-terminal fragment (SER)
+        @test get_full_name(frags[3], FNT.NO_VARIANT_EXTENSIONS) == "SER"
+        @test get_full_name(frags[3], FNT.ADD_VARIANT_EXTENSIONS) == "SER-C"
+        @test get_full_name(frags[3], FNT.ADD_RESIDUE_ID) == "SER3"
+        @test get_full_name(frags[3], FNT.ADD_VARIANT_EXTENSIONS_AND_ID) == "SER-C3"
+    end
+end
+
+@testitem "Fragment/get_full_name variants" begin
+    FNT = BiochemicalAlgorithms.FullNameType
+
+    # flags => expected variant suffix
+    cases = [
+        Symbol[]                                     => "",
+        [:N_TERMINAL]                                => "-N",
+        [:C_TERMINAL]                                => "-C",
+        [:N_TERMINAL, :C_TERMINAL]                   => "-M",
+        [:HAS_SSBOND]                                => "-S",
+        [:N_TERMINAL, :HAS_SSBOND]                   => "-NS",
+        [:C_TERMINAL, :HAS_SSBOND]                   => "-CS",
+        [:N_TERMINAL, :C_TERMINAL, :HAS_SSBOND]      => "-MS",
+    ]
+
+    for T in [Float32, Float64]
+        for (flags, suffix) in cases
+            sys = System{T}()
+            chain = Chain(Molecule(sys))
+            # padded name checks that blanks are stripped
+            f = Fragment(chain, 42; name = " CYS ", flags = Flags(flags))
+
+            @test get_full_name(f, FNT.NO_VARIANT_EXTENSIONS) == "CYS"
+            @test get_full_name(f, FNT.ADD_VARIANT_EXTENSIONS) == "CYS$(suffix)"
+            @test get_full_name(f, FNT.ADD_RESIDUE_ID) == "CYS42"
+            @test get_full_name(f, FNT.ADD_VARIANT_EXTENSIONS_AND_ID) == "CYS$(suffix)42"
+            @test get_full_name(f) == "CYS$(suffix)"
+        end
+    end
+end
+
+@testitem "Fragment/get_full_name with disulfide bonds from PDB" begin
+    for T in [Float32, Float64]
+        # bpti.pdb contains SSBOND records for CYS 5-55, 14-38, 30-51 in chain I
+        sys = load_pdb(ball_data_path("../test/data/bpti.pdb"), T)
+
+        cys = filter(f -> f.name == "CYS", collect(fragments(sys)))
+        bonded = filter(f -> has_flag(f, :HAS_SSBOND), cys)
+        @test sort([f.number for f in bonded]) == [5, 14, 30, 38, 51, 55]
+
+        for f in bonded
+            @test get_full_name(f) == "CYS-S"
+        end
+    end
+end

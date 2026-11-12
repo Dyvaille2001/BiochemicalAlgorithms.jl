@@ -4,6 +4,7 @@ export
     AtomContainer,
     System,
     SystemComponent,
+    copy_frame!,
     default_system,
     frame_ids,
     get_property,
@@ -11,6 +12,8 @@ export
     has_property,
     nframes,
     parent_system,
+    select_frame!,
+    selected_frame,
     set_flag!,
     set_property!,
     sort_atoms!,
@@ -84,9 +87,6 @@ Abstract base type for all atom containers.
 """
 abstract type AbstractAtomContainer{T} <: AbstractSystemComponent{T} end
 
-@inline frame_ids(ac::AbstractAtomContainer) = unique(atoms(ac).frame_id)
-@inline nframes(ac::AbstractAtomContainer) = length(frame_ids(ac))
-
 """
     $(TYPEDEF)
 
@@ -98,12 +98,22 @@ Mutable representation of a biomolecular system.
  - `flags::Flags`
 
 # Constructors
-    System(name::AbstractString = "", properties::Properties = Properties(), flags::Flags = Flags())
-
+```julia
+System(
+    name::AbstractString = "",
+    properties::Properties = Properties(),
+    flags::Flags = Flags()
+)
+```
 Creates a new and empty `System{Float32}`.
 
-    System{T}(name::AbstractString = "", properties::Properties = Properties(), flags::Flags = Flags())
-
+```julia
+System{T}(
+    name::AbstractString = "",
+    properties::Properties = Properties(),
+    flags::Flags = Flags()
+)
+```
 Creates a new and empty `System{T}`.
 """
 @auto_hash_equals mutable struct System{T} <: AbstractAtomContainer{T}
@@ -117,7 +127,9 @@ Creates a new and empty `System{T}`.
     _chains::_ChainTable
     _secondary_structures::_SecondaryStructureTable
     _fragments::_FragmentTable
-    _curr_idx::Int
+
+    _current_idx::Int
+    _current_frame::Int
 
     function System{T}(
         name::AbstractString = "",
@@ -134,7 +146,8 @@ Creates a new and empty `System{T}`.
             _ChainTable(),
             _SecondaryStructureTable(),
             _FragmentTable(),
-            0
+            0,
+            1
         )
     end
 end
@@ -167,13 +180,13 @@ end
 Returns the next available `idx` for the given system.
 """
 @inline function _next_idx!(sys::System{T}) where T
-    sys._curr_idx += 1
+    sys._current_idx += 1
 end
 
 @inline function _offset_atom_indices!(sys::System, by::Int)
     _offset_indices!(sys._atoms, by)
-    _offset_indices!(sys._bonds, :a1, by)
-    _offset_indices!(sys._bonds, :a2, by)
+    _offset_indices!(sys._bonds, :atom1_idx, by)
+    _offset_indices!(sys._bonds, :atom2_idx, by)
     sys
 end
 
@@ -201,13 +214,14 @@ end
 
 @inline function _offset_secondary_structure_indices!(sys::System, by::Int)
     _offset_indices!(sys._secondary_structures, by)
-    _offset_indices!(sys._fragments, :secondary_structure_idx, by)
     sys
 end
 
 @inline function _offset_fragment_indices!(sys::System, by::Int)
     _offset_indices!(sys._fragments, by)
     _offset_indices!(sys._atoms, :fragment_idx, by)
+    _offset_indices!(sys._secondary_structures, :first_fragment_idx, by)
+    _offset_indices!(sys._secondary_structures, :last_fragment_idx, by)
     sys
 end
 
@@ -223,8 +237,70 @@ function _offset_indices!(sys::System, by::Int)
     _offset_chain_indices!(sys, by)
     _offset_secondary_structure_indices!(sys, by)
     _offset_fragment_indices!(sys, by)
-    sys._curr_idx += by
+    sys._current_idx += by
     sys
+end
+
+"""
+    frame_ids(::AbstractAtomContainer = default_system())
+
+Returns a vector of all unique `frame_id`s present in the given container.
+"""
+@inline function frame_ids(ac::AbstractAtomContainer = default_system())
+    unique(atoms(ac; frame_id = nothing).frame_id)
+end
+
+"""
+    nframes(::AbstractAtomContainer = default_system())
+
+Returns the number of unique `frame_id`s present in the given container.
+"""
+@inline function nframes(ac::AbstractAtomContainer = default_system())
+    length(frame_ids(ac))
+end
+
+"""
+    selected_frame(::System = default_system())
+
+Returns the system's currently selected `frame_id`.
+"""
+@inline function selected_frame(sys::System = default_system())
+    sys._current_frame
+end
+
+"""
+    select_frame!(::System = default_system(), frame_id::Int)
+
+Sets the system's currently selected `frame_id` to the given value.
+"""
+@inline function select_frame!(sys::System, frame_id::Int)
+    sys._current_frame = frame_id
+    sys
+end
+
+@inline function select_frame!(frame_id::Int)
+    select_frame!(default_system(), frame_id)
+end
+
+"""
+    copy_frame!(::System = default_system(), target_frame::Int)
+
+Appends a copy of the currently selected frame to the given target frame ID.
+"""
+function copy_frame!(sys::System, target_frame::Int)
+    idxmap = Dict(a.idx => _copy!(a; frame_id = target_frame) for a in atoms(sys))
+    aidx   = keys(idxmap)
+    for b in filter(b -> b.atom1_idx in aidx && b.atom2_idx in aidx, bonds(sys))
+        Bond(idxmap[b.atom1_idx], idxmap[b.atom2_idx], b.order;
+            properties = b.properties,
+            flags = b.flags
+        )
+    end
+    sys
+end
+
+@inline function copy_frame!(target_frame::Int)
+    copy_frame!(default_system(), target_frame)
 end
 
 """
@@ -238,15 +314,15 @@ Copies all system components from `others` to `sys`.
 """
 function Base.append!(sys::System{T}, others::System{T}...) where T
     for other in others
-        offset = other._curr_idx
-        other = _offset_indices!(deepcopy(other), sys._curr_idx)
+        offset = other._current_idx
+        other = _offset_indices!(deepcopy(other), sys._current_idx)
         append!(sys._atoms, other._atoms)
         append!(sys._bonds, other._bonds)
         append!(sys._molecules, other._molecules)
         append!(sys._chains, other._chains)
         append!(sys._secondary_structures, other._secondary_structures)
         append!(sys._fragments, other._fragments)
-        sys._curr_idx += offset
+        sys._current_idx += offset
     end
     sys
 end

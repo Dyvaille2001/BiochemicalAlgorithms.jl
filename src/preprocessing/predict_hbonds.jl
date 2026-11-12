@@ -1,7 +1,6 @@
-using CellListMap
-using LinearAlgebra
-
-export predict_hbonds!, backbone_hydrogen_bonds
+export
+    backbone_hydrogen_bonds,
+    predict_hbonds!
 
 """
     $(TYPEDSIGNATURES)
@@ -9,16 +8,16 @@ export predict_hbonds!, backbone_hydrogen_bonds
 Predict hydrogen bonds for a given AtomContainer.
 
 The `method` parameter selects one of the implemented strategies for H-bond prediction. Bonds can be created between
-the donor and acceptor atoms (e.g., `N` and `O`), which is the default, or between the hydrogen and the acceptor (e.g., `H` and `O`). 
+the donor and acceptor atoms (e.g., `N` and `O`), which is the default, or between the hydrogen and the acceptor (e.g., `H` and `O`).
 This behaviour is controlled by the `h_bond_from_donor`-switch.
 
 # Available methods
  - `:KABSCH_SANDER`: only predicts *protein backbone* hydrogen bonds as required for secondary
-   structure prediction with the Kabsch-Sander algorithm `DSSP` (Kabsch W & Sander C (1983). Dictionary of protein secondary 
+   structure prediction with the Kabsch-Sander algorithm `DSSP` (Kabsch W & Sander C (1983). Dictionary of protein secondary
    structure: pattern recognition of hydrogen-bonded and geometrical features. Biopolymers, 22, 2577-2637".)
 
  - `:WISHART_ET_AL`: predicts hydrogen bonds between amid and α-hydrogens (`H`/`HA`) and carbonyl oxygens in the backbone (`O`)
-   or sidechain oxygens (`OD`, `OE`, `OG`, `OH`). This method follows the criterion given in (Neal, S., Nip, A. M., Zhang, H., 
+   or sidechain oxygens (`OD`, `OE`, `OG`, `OH`). This method follows the criterion given in (Neal, S., Nip, A. M., Zhang, H.,
    and Wishart, D. S. (2003). Rapid and accurate calculation of protein 1H, 13C and 15N chemical shifts. J Biomol NMR, 26(3):215-240.
 
 # Example
@@ -50,10 +49,10 @@ function predict_hbonds_kabsch_sander!(ac::AbstractAtomContainer{T}, h_bond_from
     O_rs = getproperty.(atom_by_name.(amino_acids, "O"), :r)
 
     # now, find all pairs of residues with an N-O distance less than 5.2Å
-    candidates = neighborlist(N_rs, O_rs, MAX_HBOND_LENGTH)
+    candidates = neighborlist(xpositions=N_rs, ypositions=O_rs, cutoff=MAX_HBOND_LENGTH)
 
     candidate_fragments = map(c -> (amino_acids[c[1]], amino_acids[c[2]], c[3]), candidates)
-    
+
     # filter out residues that are adjacent in the chain, and interactions inside the same residue
     # TODO: we should really check for a peptide bond here, as the numbering might be misleading
     filtered_candidates = filter(c -> (
@@ -66,12 +65,8 @@ function predict_hbonds_kabsch_sander!(ac::AbstractAtomContainer{T}, h_bond_from
     n_added_hbonds = 0
 
     # computing the hydrogen position requires looking at the predecessor in the chain; to speed things up,
-    # we precompute that information
+    # we cache that information lazily below
     NH_positions = Dict{Fragment{T}, Vector3}()
-
-    for a in amino_acids
-        
-    end
 
     # now, for each filtered candidate pair, approximate the hydrogen bond energy
     for (c1, c2) in filtered_candidates
@@ -117,10 +112,10 @@ function predict_hbonds_kabsch_sander!(ac::AbstractAtomContainer{T}, h_bond_from
 
         n_added_hbonds += 1
 
-        donor_idx    = h_bond_from_donor ? N.idx : H.idx
-        acceptor_idx = O.idx
+        donor    = h_bond_from_donor ? N : H
+        acceptor = O
 
-        Bond(parent_system(N), donor_idx, acceptor_idx, BondOrder.Single; flags=Flags([:TYPE__HYDROGEN]))
+        Bond(donor, acceptor, BondOrder.Single; flags=Flags([:TYPE__HYDROGEN]))
 
         @debug "H-Bond found between $(get_full_name(c1)) and $(get_full_name(c2))"
     end
@@ -150,8 +145,8 @@ function backbone_hydrogen_bonds(ac::AbstractAtomContainer)
             (
                 (parent_fragment(a1) != parent_fragment(a2)) &&
                     (
-                        (a1.name ∈ ["N", "H"]) && (a2.name == "O") ||
-                        (a2.name ∈ ["N", "H"]) && (a1.name == "O")
+                        ((a1.name ∈ ["N", "H"]) && (a2.name == "O")) ||
+                        ((a2.name ∈ ["N", "H"]) && (a1.name == "O"))
                     )
             )
         end,
