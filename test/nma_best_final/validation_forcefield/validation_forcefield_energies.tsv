@@ -1,0 +1,5 @@
+System	Improper convention	Atoms	Δ bond	Δ angle	Δ vdW	Δ electrostatic	Δ torsion	Δ total	MMTK total
+bala1	amber	22	2.681e-12	-3.412e-11	1.084e-09	2.004e-07	1.0649	1.0649	-117.7560
+bala1	mmtk	22	2.681e-12	-3.412e-11	1.084e-09	2.004e-07	1.888e-10	2.016e-07	-117.7560
+alaala	amber	23	1.344e-10	-4.817e-12	-6.757e-11	6.429e-07	51.8615	51.8615	-373.2118
+alaala	mmtk	23	1.344e-10	-4.817e-12	-6.757e-11	6.429e-07	-2.591e-11	6.429e-07	-373.2118

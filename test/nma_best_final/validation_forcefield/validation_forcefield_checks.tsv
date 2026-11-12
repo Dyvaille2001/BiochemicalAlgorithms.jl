@@ -1,0 +1,13 @@
+System	Criterion	Value	Status
+bala1	|Δ E_total| < 0.0001	2.016e-07	PASS
+bala1	gradient RMS < 1.0e-5	2.942e-08	PASS
+bala1	|Δ E_min| < 0.0001	2.007e-07	PASS
+bala1	mean rel. freq diff < 0.0001	6.850e-06	PASS
+bala1	max rel. freq diff < 0.001	1.176e-05	PASS
+bala1	6 zero modes, 0 imaginary	6	PASS
+alaala	|Δ E_total| < 0.0001	6.429e-07	PASS
+alaala	gradient RMS < 1.0e-5	8.069e-08	PASS
+alaala	|Δ E_min| < 0.0001	6.437e-07	PASS
+alaala	mean rel. freq diff < 0.0001	6.813e-06	PASS
+alaala	max rel. freq diff < 0.001	1.185e-05	PASS
+alaala	6 zero modes, 0 imaginary	6	PASS

@@ -1,0 +1,5 @@
+cutoff (Å)	zero modes WT	zero modes mutant	ΔMSF region (rel.)	ΔMSF target (rel.)	max abs(ΔMSF) (rel.)	RMSIP
+6	6	6	0.0098	0.3097	0.4992	0.9695
+7	6	6	-2.750e-04	0.1963	0.4963	0.9718
+8	6	6	0.0020	0.1876	0.3931	0.9725
+10	6	6	2.745e-04	0.1262	0.3018	0.9749

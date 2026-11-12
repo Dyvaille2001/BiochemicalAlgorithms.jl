@@ -1,0 +1,5 @@
+System	Improper convention	gradient RMS vs MMTK (kJ/mol/Å)	max force/energy ratio	|g| after polish	Hessian asymmetry	E_min Julia	E_min MMTK	Δ E_min
+bala1	amber	10.7585	5.955e-10	1.509e-07	3.633e-09	-118.3127	-117.7640	-0.5486
+bala1	mmtk	2.942e-08	8.440e-10	1.915e-08	4.357e-09	-117.7640	-117.7640	2.007e-07
+alaala	amber	46.2399	4.126e-10	1.497e-10	3.771e-09	-336.4484	-373.2207	36.7723
+alaala	mmtk	8.069e-08	3.764e-10	1.406e-11	3.304e-09	-373.2207	-373.2207	6.437e-07

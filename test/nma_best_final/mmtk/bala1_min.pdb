@@ -1,0 +1,24 @@
+ATOM      1  C   ACE A   1      -0.782   0.513   0.974  0.00  0.00      chai C
+ATOM      2  CH3 ACE A   1      -2.272   0.346   0.798  0.00  0.00      chai C
+ATOM      3 1HH3 ACE A   1      -2.511  -0.711   0.701  0.00  0.00      chai H
+ATOM      4 2HH3 ACE A   1      -2.597   0.893  -0.085  0.00  0.00      chai H
+ATOM      5 3HH3 ACE A   1      -2.776   0.748   1.676  0.00  0.00      chai H
+ATOM      6  O   ACE A   1      -0.341   1.114   1.943  0.00  0.00      chai O
+ATOM      7  C   ALA A   2       2.119   1.473  -0.190  0.00  0.00      chai C
+ATOM      8  CA  ALA A   2       1.460   0.070  -0.050  0.00  0.00      chai C
+ATOM      9  H   ALA A   2      -0.480  -0.394  -0.778  0.00  0.00      chai H
+ATOM     10  HA  ALA A   2       1.827  -0.345   0.890  0.00  0.00      chai H
+ATOM     11  N   ALA A   2      -0.010   0.055  -0.009  0.00  0.00      chai N
+ATOM     12  O   ALA A   2       3.215   1.586  -0.735  0.00  0.00      chai O
+ATOM     13  CB  ALA A   2       1.885  -0.883  -1.179  0.00  0.00      chai C
+ATOM     14 1HB  ALA A   2       1.438  -1.866  -1.029  0.00  0.00      chai H
+ATOM     15 2HB  ALA A   2       1.574  -0.482  -2.144  0.00  0.00      chai H
+ATOM     16 3HB  ALA A   2       2.971  -0.994  -1.177  0.00  0.00      chai H
+ATOM     17  CH3 NME A   3       1.914   3.928   0.125  0.00  0.00      chai C
+ATOM     18  H   NME A   3       0.603   2.353   0.760  0.00  0.00      chai H
+ATOM     19 1HH3 NME A   3       2.092   4.186  -0.921  0.00  0.00      chai H
+ATOM     20 2HH3 NME A   3       1.175   4.611   0.546  0.00  0.00      chai H
+ATOM     21 3HH3 NME A   3       2.852   4.029   0.674  0.00  0.00      chai H
+ATOM     22  N   NME A   3       1.436   2.550   0.218  0.00  0.00      chai N
+TER      23      NME A   3
+END

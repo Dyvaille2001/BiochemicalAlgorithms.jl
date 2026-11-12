@@ -1,0 +1,5 @@
+System	Improper convention	Modes	zero modes	imaginary	mean rel. diff	max rel. diff	low modes (<500)	high modes (>2500)	median ratio	lowest mode Julia	lowest mode MMTK
+bala1	amber	60	6	0	0.0349	0.3774	0.0970	2.154e-04	1.0002	38.2639	27.7788
+bala1	mmtk	60	6	0	6.850e-06	1.176e-05	3.280e-06	1.093e-05	1.0000	27.7789	27.7788
+alaala	amber	63	6	0	0.0110	0.1395	0.0192	3.205e-04	1.0000	73.2888	69.3804
+alaala	mmtk	63	6	0	6.813e-06	1.185e-05	3.943e-06	1.109e-05	1.0000	69.3802	69.3804

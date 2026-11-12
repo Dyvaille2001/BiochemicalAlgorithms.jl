@@ -1,0 +1,8 @@
+minimum_energy -117.764037755
+reread Lennard-Jones 10.816910315
+reread cosine_dihedral_angle 10.185267767
+reread electrostatic -150.871100651
+reread electrostatic/pair_sum -150.871100651
+reread harmonic_bond 3.041642938
+reread harmonic_bond_angle 9.071264076
+reread TOTAL -117.756015555

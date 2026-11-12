@@ -1,0 +1,2126 @@
+
+THIS IS A VALIDATION FILE; FOR SUCCESSFULLY RAN RUNBOOK FOR THE PIPELINE
+following step by step instruction from RUNBOOK.md AFTER successfully adaptation of One-time prerequisites
+
+## 1. Unit tests
+
+```powershell
+cd test\nma
+julia test_nma_correctness.jl
+```
+Expected: every test set green. Mutation check (do once): change `gamma / r^2` to `gamma / r` in
+`kfun_distance_weighted` → "diatomic DWENM" and the finite-difference test must fail; restore.
+
+
+PS <PROJECT_ROOT>>
+PS <PROJECT_ROOT>> cd test\nma_best_finals
+
+PS <PROJECT_ROOT>\test\nma_best_final> ls
+
+
+
+
+Mode                 LastWriteTime         Length Name                                                                                                                         
+----                 -------------         ------ ----                                                                                                                         
+-a----        10/31/2026   1:55 PM          19742 cb1_investigation.jl                                                                                                         
+-a----        10/31/2026   1:58 PM           3108 mmtk_compare.py                                                                                                              
+-a----        10/31/2026   1:59 PM          13400 nma_core.jl                                                                                                                  
+-a----        10/31/2026   2:47 PM           2102 nma_report.jl                                                                                                                
+-a----        10/31/2026   1:58 PM           2008 prody_anm_export.py                                                                                                          
+-a----        10/31/2026   1:53 PM           5306 RUNBOOK.md                                                                                                                   
+-a----        10/31/2026   1:54 PM           1618 run_all.ps1                                                                                                                  
+-a----        10/31/2026   2:46 PM          11645 test_nma_correctness.jl                                                                                                      
+-a----        10/31/2026   2:45 PM           6290 torsion_improper_patch.jl                                                                                                    
+-a----        10/31/2026   1:55 PM          17133 validate_forcefield.jl                                                                                                       
+-a----        10/31/2026   1:55 PM          20238 validate_model.jl                                                                                                            
+
+
+PS <PROJECT_ROOT>\test\nma_best_final> julia test_nma_correctness.jl
+Test Summary:   | Pass  Total   Time
+NMA correctness |   71     71  15.9s
+PS <PROJECT_ROOT>\test\nma_best_final> 
+
+
+
+## 2. MMTK reference data (Docker container, Python 2)
+
+```
+cd /data
+python mmtk_compare.py bala1 bala1
+python mmtk_compare.py AlaAla.pdb alaala
+```
+Copy, from the SAME runs, into `test\nma`:
+`bala1_min.pdb mmtk_bala1_freqs.txt mmtk_bala1_gradients.txt mmtk_bala1_energies.txt`
+`alaala_min.pdb mmtk_alaala_freqs.txt mmtk_alaala_gradients.txt mmtk_alaala_energies.txt`
+(the 3-decimal PDB rounding differs from run to run: never mix files from different runs).
+
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Try the new cross-platform PowerShell https://aka.ms/pscore6
+
+PS <USER_HOME>> cd "<MMTK_DOCKER_ROOT>"
+PS <MMTK_DOCKER_ROOT>> docker build -t mmtk-env .
+[+] Building 3.4s (13/13) FINISHED                                                                 docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                               0.1s
+ => => transferring dockerfile: 1.36kB                                                                             0.1s
+ => [internal] load metadata for docker.io/library/python:2.7-slim                                                 1.8s
+ => [auth] library/python:pull token for registry-1.docker.io                                                      0.0s
+ => [internal] load .dockerignore                                                                                  0.1s
+ => => transferring context: 2B                                                                                    0.0s
+ => [1/8] FROM docker.io/library/python:2.7-slim@sha256:6c1ffdff499e29ea663e6e67c9b6b9a3b401d554d2c9f061f9a45344e  0.1s
+ => => resolve docker.io/library/python:2.7-slim@sha256:6c1ffdff499e29ea663e6e67c9b6b9a3b401d554d2c9f061f9a45344e  0.1s
+ => CACHED [2/8] RUN sed -i 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' /etc/apt/sources.  0.0s
+ => CACHED [3/8] RUN apt-get -o Acquire::Check-Valid-Until=false update &&     apt-get install -y --no-install-re  0.0s
+ => CACHED [4/8] RUN python -m pip install --upgrade "pip<21.0"                                                    0.0s
+ => CACHED [5/8] RUN pip install numpy==1.8.2                                                                      0.0s
+ => CACHED [6/8] RUN pip install --no-cache-dir --no-binary :all: ScientificPython==2.9.4                          0.0s
+ => CACHED [7/8] RUN git clone https://github.com/khinsen/MMTK.git /tmp/MMTK &&     cd /tmp/MMTK &&     python se  0.0s
+ => CACHED [8/8] WORKDIR /workspace                                                                                0.0s
+ => exporting to image                                                                                             0.5s
+ => => exporting layers                                                                                            0.0s
+ => => exporting manifest sha256:e5e7230e9436a251b49ccb3fe126c487938386a734fc13819fdfae4dd1c54225                  0.0s
+ => => exporting config sha256:63ac68f57ca425cfc954d29e92bc6f81b3cee3ae95a0235d577f7bd3f3fc6e20                    0.0s
+ => => exporting attestation manifest sha256:07e1246890b456631b7c7ed0e7a60dcecd1490fa29aee12791303565ab6659bf      0.1s
+ => => exporting manifest list sha256:f32866004a50de80429826b7e611346120e78abb6df43373d1e3815574521ca9             0.1s
+ => => naming to docker.io/library/mmtk-env:latest                                                                 0.0s
+ => => unpacking to docker.io/library/mmtk-env:latest                                                              0.0s
+PS <MMTK_DOCKER_ROOT>>  docker images
+                                                                                                    i Info →   U  In UseIMAGE                                 ID             DISK USAGE   CONTENT SIZE   EXTRA
+docker/welcome-to-docker:latest       c4d56c24da4f       22.2MB         6.03MB    U
+hello-world:latest                    f7931603f70e       20.3kB         3.96kB    U
+julia-nma-test:latest                 a4b2160ba63d       2.68GB          921MB
+julia-nma:latest                      f1d0070c1883       2.67GB          918MB
+mcr.microsoft.com/powershell:latest   810c4f1e0c9d        489MB          135MB    U
+mmtk-env:latest                       f32866004a50        988MB          262MB    U
+mmtk-python2:latest                   a0523c8ad117        988MB          262MB    U
+PS <MMTK_DOCKER_ROOT>> docker run -it -v "${PWD}:/data" mmtk-python2:latest
+root@d16ece36bc72:/workspace# /data
+bash: /data: Is a directory
+root@d16ece36bc72:/workspace# ls /data
+
+OR WHEN ALREADY IN /data folder, just type ls, to see all files inside (root@d16ece36bc72:/data# ls)
+
+root@d16ece36bc72:/data# ls
+AlaAla.pdb            ala_mmtk_modes_clean.txt  bALA1_minimized.pdb  mmtk_alaala_freqs.txt      mmtk_bonds_improper.txt
+   mmtk_gradients.txt       nma_example_konhin.py
+AlaAla_minimized.pdb  alaala_min.pdb            bala1_min.pdb        mmtk_alaala_gradients.txt  mmtk_compare.py                                                                                mmtk_improper_class.txt  prody_anm_export.py
+Dockerfile            alaala_mmtk.py            bala1_mmtk.py        mmtk_bala1_freqs.py        mmtk_compare_old_copied_claude.py  mmtk_impropers.txt                                           run_nma.py
+ala_mmtk_modes.txt    bALA1.pdb                 mmtk_ala.txt         mmtk_bala1_freqs_old.py    mmtk_freqs.txt                                                                                 mmtk_search.txt           run_nma_files
+root@d16ece36bc72:/data# python mmtk_compare.py bala1 bala1
+atoms: 22   (non-trivial modes expected: 60)
+minimized energy (kJ/mol): -117.764037755
+MMTK energy terms at the minimum (kJ/mol):
+   Lennard-Jones                       10.772544
+   cosine dihedral angle               10.201859
+   electrostatic                     -150.885001
+   electrostatic/pair sum            -150.885001
+   harmonic bond                        2.996545
+   harmonic bond angle                  9.150015
+   TOTAL                             -117.764038
+MMTK energy terms after re-reading bala1_min.pdb (compare THIS with Julia):
+   Lennard-Jones                       10.816910
+   cosine dihedral angle               10.185268
+   electrostatic                     -150.871101
+   electrostatic/pair sum            -150.871101
+   harmonic bond                        3.041643
+   harmonic bond angle                  9.071264
+   TOTAL                             -117.756016
+check: print of one mode -> Mode 6 with frequency 0.8327886254483855
+check: frequency/invcm   -> 27.7788384339
+wrote: bala1_min.pdb  mmtk_bala1_freqs.txt  mmtk_bala1_gradients.txt  mmtk_bala1_energies.txt
+root@d16ece36bc72:/data# mmtk_compare.py AlaAla.pdb alaala
+bash: mmtk_compare.py: command not found
+root@d16ece36bc72:/data# python mmtk_compare.py AlaAla.pdb alaala
+atoms: 23   (non-trivial modes expected: 63)
+minimized energy (kJ/mol): -373.220715303
+MMTK energy terms at the minimum (kJ/mol):
+   Lennard-Jones                       30.484183
+   cosine dihedral angle               50.613594
+   electrostatic                     -483.175434
+   electrostatic/pair sum            -483.175434
+   harmonic bond                        1.795456
+   harmonic bond angle                 27.061486
+   TOTAL                             -373.220715
+MMTK energy terms after re-reading alaala_min.pdb (compare THIS with Julia):
+   Lennard-Jones                       30.477494
+   cosine dihedral angle               50.573535
+   electrostatic                     -483.023672
+   electrostatic/pair sum            -483.023672
+   harmonic bond                        1.823322
+   harmonic bond angle                 26.937483
+   TOTAL                             -373.211838
+check: print of one mode -> Mode 6 with frequency 2.0799716460589961
+check: frequency/invcm   -> 69.3803860155
+wrote: alaala_min.pdb  mmtk_alaala_freqs.txt  mmtk_alaala_gradients.txt  mmtk_alaala_energies.txt
+root@d16ece36bc72:/data#
+
+
+
+## 3. Force field vs MMTK (from the project root)
+
+```powershell
+julia --project=. test\nma\validate_forcefield.jl            # bala1 and alaala, both conventions
+```
+Writes `validation_forcefield.md` and `validation_forcefield_*.tsv`; exit code 1 if an MMTK-convention
+row fails. Numbers from the earlier manual runs, for comparison:
+
+| System | Convention | mean rel. freq diff | worst mode | lowest mode J / M (cm⁻¹) |
+|---|---|---|---|---|
+| bala1 | MMTK | 6.9e-6 | 1.2e-5 | 27.7789 / 27.7788 |
+| bala1 | Amber | 3.5e-2 | 0.377 | 38.26 / 27.78 |
+| Ala-Ala | MMTK | 6.8e-6 | 1.2e-5 | 69.3802 / 69.3804 |
+| Ala-Ala | Amber | 1.1e-2 | 0.140 | 73.29 / 69.38 |
+
+
+PS <PROJECT_ROOT>\test\nma_best_final> cd ..\..
+PS <PROJECT_ROOT>> julia --project=. test\nma_best_final\validate_forcefield.jl
+Precompiling BiochemicalAlgorithms finished.
+  1 dependency successfully precompiled in 104 seconds. 353 already precompiled.
+
+======================================================================
+  bala1  |  improper convention: amber
+======================================================================
+[ Info: reconstruct_fragments!(): added 4 atoms.
+[ Info: build_bonds!(): built 20 bonds
+    adding missing bond ALA-M:N - ALA-M:H  d = 1.007
+  atoms: 22   bonds: 21   capped: true   impropers: 4   warnings: 0
+  ΔE_total = +1.06e+00   grad RMS = 1.08e+01   Emin: Julia -118.312667  MMTK -117.764038
+  frequencies: mean rel. diff 3.49e-02, max 3.77e-01, lowest mode 38.2639 vs 27.7788 cm⁻¹
+
+======================================================================
+  bala1  |  improper convention: mmtk
+======================================================================
+[ Info: reconstruct_fragments!(): added 4 atoms.
+[ Info: build_bonds!(): built 20 bonds
+    adding missing bond ALA-M:N - ALA-M:H  d = 1.007
+  atoms: 22   bonds: 21   capped: true   impropers: 4   warnings: 0
+  ΔE_total = +2.02e-07   grad RMS = 2.94e-08   Emin: Julia -117.764038  MMTK -117.764038
+  frequencies: mean rel. diff 6.85e-06, max 1.18e-05, lowest mode 27.7789 vs 27.7788 cm⁻¹
+
+======================================================================
+  alaala  |  improper convention: amber
+======================================================================
+[ Info: reconstruct_fragments!(): added 0 atoms.
+[ Info: build_bonds!(): built 22 bonds
+  atoms: 23   bonds: 22   capped: false   impropers: 3   warnings: 0
+  ΔE_total = +5.19e+01   grad RMS = 4.62e+01   Emin: Julia -336.448420  MMTK -373.220715
+  frequencies: mean rel. diff 1.10e-02, max 1.40e-01, lowest mode 73.2888 vs 69.3804 cm⁻¹
+
+======================================================================
+  alaala  |  improper convention: mmtk
+======================================================================
+[ Info: reconstruct_fragments!(): added 0 atoms.
+[ Info: build_bonds!(): built 22 bonds
+  atoms: 23   bonds: 22   capped: false   impropers: 3   warnings: 0
+  ΔE_total = +6.43e-07   grad RMS = 8.07e-08   Emin: Julia -373.220715  MMTK -373.220715
+  frequencies: mean rel. diff 6.81e-06, max 1.18e-05, lowest mode 69.3802 vs 69.3804 cm⁻¹
+
+
+######################################################################
+  VALIDATION TABLES
+######################################################################
+
+Table 1 — energy terms at the SAME geometry, Julia − MMTK (kJ/mol)
+| System | Improper convention | Atoms | Δ bond    | Δ angle    | Δ vdW      | Δ electrostatic | Δ torsion  | Δ total   | MMTK total |
+|--------|---------------------|-------|-----------|------------|------------|-----------------|------------|-----------|------------|
+| bala1  | amber               | 22    | 2.681e-12 | -3.412e-11 | 1.084e-09  | 2.004e-07       | 1.0649     | 1.0649    | -117.7560  |
+| bala1  | mmtk                | 22    | 2.681e-12 | -3.412e-11 | 1.084e-09  | 2.004e-07       | 1.888e-10  | 2.016e-07 | -117.7560  |
+| alaala | amber               | 23    | 1.344e-10 | -4.817e-12 | -6.757e-11 | 6.429e-07       | 51.8615    | 51.8615   | -373.2118  |
+| alaala | mmtk                | 23    | 1.344e-10 | -4.817e-12 | -6.757e-11 | 6.429e-07       | -2.591e-11 | 6.429e-07 | -373.2118  |
+
+Table 2 — gradients, force/energy consistency and minimum
+| System | Improper convention | gradient RMS vs MMTK (kJ/mol/Å) | max force/energy ratio | |g| after polish | Hessian asymmetry | E_min Julia | E_min MMTK | Δ E_min   |
+|--------|---------------------|---------------------------------|------------------------|------------------|-------------------|-------------|------------|-----------|
+| bala1  | amber               | 10.7585                         | 5.955e-10              | 1.509e-07        | 3.633e-09         | -118.3127   | -117.7640  | -0.5486   |
+| bala1  | mmtk                | 2.942e-08                       | 8.440e-10              | 1.915e-08        | 4.357e-09         | -117.7640   | -117.7640  | 2.007e-07 |
+| alaala | amber               | 46.2399                         | 4.126e-10              | 1.497e-10        | 3.771e-09         | -336.4484   | -373.2207  | 36.7723   |
+| alaala | mmtk                | 8.069e-08                       | 3.764e-10              | 1.406e-11        | 3.304e-09         | -373.2207   | -373.2207  | 6.437e-07 |
+
+Table 3 — normal-mode frequencies vs MMTK (cm⁻¹)
+| System | Improper convention | Modes | zero modes | imaginary | mean rel. diff | max rel. diff | low modes (<500) | high modes (>2500) | median ratio | lowest mode Julia | lowest mode MMTK |
+|--------|---------------------|-------|------------|-----------|----------------|---------------|------------------|--------------------|--------------|-------------------|------------------|
+| bala1  | amber               | 60    | 6          | 0         | 0.0349         | 0.3774        | 0.0970           | 2.154e-04          | 1.0002       | 38.2639           | 27.7788          |
+| bala1  | mmtk                | 60    | 6          | 0         | 6.850e-06      | 1.176e-05     | 3.280e-06        | 1.093e-05          | 1.0000       | 27.7789           | 27.7788          |
+| alaala | amber               | 63    | 6          | 0         | 0.0110         | 0.1395        | 0.0192           | 3.205e-04          | 1.0000       | 73.2888           | 69.3804          |
+| alaala | mmtk                | 63    | 6          | 0         | 6.813e-06      | 1.185e-05     | 3.943e-06        | 1.109e-05          | 1.0000       | 69.3802           | 69.3804          |
+
+Table 4 — pass/fail with MMTK's improper convention imposed
+| System | Criterion                    | Value     | Status |
+|--------|------------------------------|-----------|--------|
+| bala1  | |Δ E_total| < 0.0001         | 2.016e-07 | PASS   |
+| bala1  | gradient RMS < 1.0e-5        | 2.942e-08 | PASS   |
+| bala1  | |Δ E_min| < 0.0001           | 2.007e-07 | PASS   |
+| bala1  | mean rel. freq diff < 0.0001 | 6.850e-06 | PASS   |
+| bala1  | max rel. freq diff < 0.001   | 1.176e-05 | PASS   |
+| bala1  | 6 zero modes, 0 imaginary    | 6         | PASS   |
+| alaala | |Δ E_total| < 0.0001         | 6.429e-07 | PASS   |
+| alaala | gradient RMS < 1.0e-5        | 8.069e-08 | PASS   |
+| alaala | |Δ E_min| < 0.0001           | 6.437e-07 | PASS   |
+| alaala | mean rel. freq diff < 0.0001 | 6.813e-06 | PASS   |
+| alaala | max rel. freq diff < 0.001   | 1.185e-05 | PASS   |
+| alaala | 6 zero modes, 0 imaginary    | 6         | PASS   |
+
+written: validation_forcefield.md and validation_forcefield_*.tsv
+
+ALL MMTK-CONVENTION CHECKS PASSED
+PS <PROJECT_ROOT>>
+
+ 
+
+
+FOR THE NEXT INSTRUCTIONS INVOLVING PYTHON; I USED UBUNTU TO CREATE A CLEAN PY§:ENVIRONMENT  AND INSTALLED THE PYTHON 3.11.x version and numpy 1.23.5 nad prody 2.4.x
+
+## 4. ProDy reference data (Python 3 with ProDy; needs `1aki.pdb`)
+
+```
+python prody_anm_export.py 1aki.pdb
+```
+Copy the four `prody_*.txt` files into `test\nma`. If the distance-weighted export fails, send me the
+error: I used ProDy's `Gamma.gamma(self, dist2, i, j)` signature and have not checked it against your version.
+
+
+Welcome to Ubuntu 20.04.6 LTS (GNU/Linux 6.18.54.1-microsoft-standard-WSL2 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Sat Oct 31 15:44:52 CET 2026
+
+  System load:  0.83               Processes:             10
+  Usage of /:   6.8% of 250.92GB   Users logged in:       0
+  Memory usage: 13%                IPv4 address for eth0: 172.29.1.51
+  Swap usage:   0%
+
+  => /usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2 is using 100.0% of     96MB
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+22 updates can be applied immediately.
+13 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+
+This message is shown once a day. To disable it please create the
+/home/dyvaille/.hushlogin file.
+(base) dyvaille@DESKTOP-TUALF24:~$
+
+(base) dyvaille@DESKTOP-TUALF24:~$ cd "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final"
+(base) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ ls -1 prody_anm_export.py 1aki.pdb
+1aki.pdb
+prody_anm_export.py
+
+(base) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ conda create -n prody311 python=3.11 -y
+Collecting package metadata (current_repodata.json): done
+Solving environment: done
+
+
+==> WARNING: A newer version of conda exists. <==
+  current version: 23.3.1
+  latest version: 26.9.4
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+Or to minimize the number of packages updated during conda update use
+
+     conda install conda=26.9.4
+
+
+
+## Package Plan ##
+
+  environment location: /home/dyvaille/anaconda3/envs/prody311
+
+  added / updated specs:
+    - python=3.11
+
+
+The following NEW packages will be INSTALLED:
+
+  _libgcc_mutex      pkgs/main/linux-64::_libgcc_mutex-0.1-main
+  _openmp_mutex      pkgs/main/linux-64::_openmp_mutex-5.1-52_gnu
+  bzip2              pkgs/main/linux-64::bzip2-1.0.8-h5eee18b_6
+  ca-certificates    pkgs/main/linux-64::ca-certificates-2026.10.20-h06a4308_0
+  ld_impl_linux-64   pkgs/main/linux-64::ld_impl_linux-64-2.44-h9e0c5a2_3
+  libexpat           pkgs/main/linux-64::libexpat-2.9.0-h7354ed3_0
+  libffi             pkgs/main/linux-64::libffi-3.4.8-h06d3fd0_3
+  libgcc             pkgs/main/linux-64::libgcc-15.2.0-h69a1729_8
+  libgcc-ng          pkgs/main/linux-64::libgcc-ng-15.2.0-h166f726_8
+  libnsl             pkgs/main/linux-64::libnsl-2.0.0-h5eee18b_0
+  libstdcxx          pkgs/main/linux-64::libstdcxx-15.2.0-h39759b7_8
+  libuuid            pkgs/main/linux-64::libuuid-1.41.5-h5eee18b_0
+  libxcb             pkgs/main/linux-64::libxcb-1.17.0-h9b100fa_0
+  libzlib            pkgs/main/linux-64::libzlib-1.3.2-h47b2149_0
+  ncurses            pkgs/main/linux-64::ncurses-6.6-hfaaeb4e_0
+  openssl            pkgs/main/linux-64::openssl-3.5.9-h1b28b03_0
+  packaging          pkgs/main/linux-64::packaging-26.3-py311h06a4308_0
+  pip                pkgs/main/noarch::pip-26.2.2-pyhc872135_0
+  pthread-stubs      pkgs/main/linux-64::pthread-stubs-0.3-h47b2149_2
+  python             pkgs/main/linux-64::python-3.11.18-hd9cb797_0
+  readline           pkgs/main/linux-64::readline-8.3-hc2a1206_0
+  setuptools         pkgs/main/linux-64::setuptools-84.2.1-py311h06a4308_0
+  sqlite             pkgs/main/linux-64::sqlite-3.53.4-h795bf6d_0
+  tk                 pkgs/main/linux-64::tk-8.6.15-h54e0aa7_0
+  tzdata             pkgs/main/noarch::tzdata-2026c-he532380_0
+  wheel              pkgs/main/linux-64::wheel-0.48.0-py311h06a4308_0
+  xorg-libx11        pkgs/main/linux-64::xorg-libx11-1.8.14-h65de747_0
+  xorg-libxau        pkgs/main/linux-64::xorg-libxau-1.0.12-h9b100fa_0
+  xorg-libxdmcp      pkgs/main/linux-64::xorg-libxdmcp-1.1.5-h9b100fa_0
+  xorg-xorgproto     pkgs/main/linux-64::xorg-xorgproto-2025.1-h47b2149_0
+  xz                 pkgs/main/linux-64::xz-5.8.4-h140a991_0
+  zlib               pkgs/main/linux-64::zlib-1.3.2-h47b2149_0
+
+
+
+Downloading and Extracting Packages
+
+Preparing transaction: done
+Verifying transaction: done
+Executing transaction: done
+#
+# To activate this environment, use
+#
+#     $ conda activate prody311
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+(base) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ conda activate prody311
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ hash -r
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ which python
+/home/dyvaille/anaconda3/envs/prody311/bin/python
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python --version
+Python 3.11.18
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -c
+Argument expected for the -c option
+usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...
+Try `python -h' for more information.
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -c "import sys; print(sys.executable)"
+/home/dyvaille/anaconda3/envs/prody311/bin/python
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -m pip install --upgrade pip
+Requirement already satisfied: pip in /home/dyvaille/anaconda3/envs/prody311/lib/python3.11/site-packages (26.2.2)
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -m pip install "numpy==1.23.5" prody
+Collecting numpy==1.23.5
+  Downloading numpy-1.23.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (2.3 kB)
+Collecting prody
+  Downloading prody-2.6.1.tar.gz (35.1 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.1/35.1 MB 4.8 MB/s  0:00:07
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Collecting biopython (from prody)
+  Downloading biopython-1.88-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+Collecting pyparsing<=3.1.1 (from prody)
+  Downloading pyparsing-3.1.1-py3-none-any.whl.metadata (5.1 kB)
+Collecting scipy (from prody)
+  Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+INFO: pip is looking at multiple versions of scipy to determine which version is compatible with other requirements. This could take a while.
+  Downloading scipy-1.17.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+  Downloading scipy-1.16.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (62 kB)
+  Downloading scipy-1.16.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (62 kB)
+  Downloading scipy-1.16.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (61 kB)
+  Downloading scipy-1.16.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (61 kB)
+  Downloading scipy-1.15.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
+Downloading numpy-1.23.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17.1/17.1 MB 7.0 MB/s  0:00:02
+Downloading pyparsing-3.1.1-py3-none-any.whl (103 kB)
+Downloading biopython-1.88-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.2/3.2 MB 7.4 MB/s  0:00:00
+Downloading scipy-1.15.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (37.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 37.7/37.7 MB 5.8 MB/s  0:00:06
+Building wheels for collected packages: prody
+  Building wheel for prody (pyproject.toml) ... done
+  Created wheel for prody: filename=prody-2.6.1-cp311-cp311-linux_x86_64.whl size=36287409 sha256=38b807b1b5ac1e0843493e36ca442da050bdc5ec38410285af9b5f2d0d0239b4
+  Stored in directory: /home/dyvaille/.cache/pip/wheels/c1/f0/d2/42b08ebde1b316d1b7477373fe926adb297d9635b14ae7e711
+Successfully built prody
+Installing collected packages: pyparsing, numpy, scipy, biopython, prody
+Successfully installed biopython-1.88 numpy-1.23.5 prody-2.6.1 pyparsing-3.1.1 scipy-1.15.3
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -c "import numpy, prody; print('numpy', numpy.__version__); print('prody', prody.__version__)"
+numpy 1.23.5
+prody 2.6.1
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ ls -1 prody_anm_export.py 1aki.pdb
+1aki.pdb
+prody_anm_export.py
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python prody_anm_export.py 1aki.pdb
+@> ProDy is configured: verbosity='none'
+C-alpha atoms: 129
+const eigenvalues 1-5: [0.78633788 1.04719998 1.34323841 1.78213525 2.00551082]
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$
+done
+
+
+
+PS <PROJECT_ROOT>> julia --project=. test\nma_best_final\validate_model.jl test\nma_best_final\1aki.pdb
+
+PS <PROJECT_ROOT>> julia --project=. test\nma_best_final\validate_model.jl test\nma_best_final\1aki.pdb
+
+=== Structure ===
+  file     : 1aki.pdb
+  Cα atoms : 129
+  [PASS] Cα count == 129 (1AKI)  (129)
+  [PASS] single chain  (A)
+  [PASS] no duplicate residue numbers
+  [PASS] all B-factors present
+  [PASS] all B-factors positive  (min 10.60)
+  [PASS] all residues have a mass  (20 types)
+
+=== Pillar A: B-factor validation (cutoff 12.0 Å) ===
+  [PASS] Hessian symmetric
+  [PASS] exactly 6 zero modes  (6)
+  [PASS] Cα graph connected  (1 component(s))
+  graph    : 1792 pairs, ⟨degree⟩ = 27.78
+  γ            = 173.3063 kJ/mol            (k = γ/r²)
+  k_eff(4 Å)   = 10.832   k_eff(12 Å) = 1.204  kJ/(mol·Å²)
+  Pearson r    = 0.5653   (unweighted model: 0.5649)
+  Spearman ρ   = 0.7386
+  [info] calibrated γ [kJ/mol]  (173.306)
+  [info] k_eff(4 Å) / k_eff(12 Å) [kJ/(mol·Å²)]  (10.832 / 1.204)
+  [info] Pearson r  (0.5653)
+  [info] Spearman ρ  (0.7386)
+  [PASS] Pearson r in sanity band  (0.5653)
+  [PASS] Spearman ρ in sanity band  (0.7386)
+  [PASS] Pearson and Spearman consistent  (Δ = 0.173)
+  [PASS] MSF profile insensitive to the mass model  (0.5653 vs 0.5649)
+  masked r     = 0.4750   (114 / 129 residues; termini and B > μ+2σ removed)
+  r (B ≥ μ+σ)  = 0.2022   (15 residues)
+  [PASS] masked r ≥ 0.35  (0.4750)
+  [info] r on the high-B residues (B ≥ μ+σ)  (0.2022)
+  [note] masked r (0.475) < full r (0.565): the removed residues carry much of the signal. Report both.
+  [note] r on the most flexible residues (0.202) is below the overall r (0.565): high-B regions are dominated by static disorder / multi-basin motion that a harmonic single-structure ENM does not describe.
+  baseline 1/CN: Pearson r = 0.7352   Spearman ρ = 0.7726
+  [info] baseline: inverse neighbour count (12 Å), Pearson r  (0.7352)
+  [note] the DWENM (r = 0.565) does NOT clearly beat simple packing (r = 0.735): B-factor agreement alone does not show that the elastic network adds information beyond local density. Say so in the thesis.
+
+=== Pillar D: null control (shuffled B-factors, 1000 permutations) ===
+  shuffled r : mean -0.0029 | max +0.3106 | exceedances 0 | p = 0.0010
+  [PASS] shuffled r centred on 0  (mean -0.0029)
+  [PASS] observed r beats the null  (p = 0.0010 (floor 0.0010))
+
+=== Modes and frequencies (calibrated γ) ===
+  dynamic range std(b_calc)/std(b_exp) = 2.426   (zero-intercept fit)
+  mean(b_calc) / mean(b_exp)            = 0.750
+  affine fit   : B0 = 14.51 Å²   γ_affine = 743.8 kJ/mol   (zero-intercept γ = 173.3, ratio 4.29)
+  [PASS] scale identity dr = r·s₀/s_affine (code consistency)  (2.4261 vs 2.4261)
+  [PASS] affine baseline B0 physical (0 ≤ B0 ≤ ⟨B⟩)  (B0 = 14.51 Å², ⟨B⟩ = 17.58 Å²)
+  [info] std(b_calc)/std(b_exp), zero-intercept fit  (2.426)
+  [info] γ_affine / γ_zero-intercept  (4.29)
+  [note] zero-intercept fit gives std ratio 2.43 = r (0.565) × s₀/s_affine (4.29): the one-scalar fit has to reproduce the mean B (baseline B0 = 14.5 Å² of ⟨B⟩ = 17.6 Å²) and therefore over-disperses the profile. γ differs by a factor 4.3 between the two calibrations, so absolute frequencies differ by 2.1×. Report γ as a range, or state the calibration used.
+  frequencies below use the zero-intercept calibration (γ = 173.31 kJ/mol)
+  [PASS] zero modes at calibrated γ  (6)
+  [PASS] no imaginary non-zero modes  (0)
+  softest mode 3.765 cm⁻¹ | highest mode 55.129 cm⁻¹
+  [PASS] softest mode in sanity band  (3.76 cm⁻¹)
+  [PASS] highest Cα mode ≤ 250 cm⁻¹  (55.1 cm⁻¹)
+  [note] frequencies are of the coarse-grained, B-factor-scaled network: collective-mode frequencies, not vibrational frequencies of the protein.
+
+First 10 non-zero modes (calibrated γ)
+| mode | eigenvalue (kJ/mol/amu/Å²) | frequency (cm⁻¹) |
+|------|----------------------------|------------------|
+| 7    | 0.0050                     | 3.7648           |
+| 8    | 0.0069                     | 4.4150           |
+| 9    | 0.0102                     | 5.3611           |
+| 10   | 0.0142                     | 6.3190           |
+| 11   | 0.0160                     | 6.7191           |
+| 12   | 0.0165                     | 6.8121           |
+| 13   | 0.0182                     | 7.1590           |
+| 14   | 0.0217                     | 7.8285           |
+| 15   | 0.0247                     | 8.3371           |
+| 16   | 0.0258                     | 8.5323           |
+
+=== DCCM ===
+  [PASS] DCCM diagonal == 1
+  [PASS] DCCM symmetric
+  [PASS] DCCM entries in [-1, 1]  ([-0.22, 1.00])
+  [info] mean abs(off-diagonal) DCCM  (0.065)
+
+=== Pillar C: γ-invariance (tautological: scaling a matrix keeps its eigenvectors) ===
+  [PASS] mode shapes independent of γ (sanity)  (RMSIP = 1.0000000000)
+
+=== Pillar C: cutoff sweep ===
+
+Cutoff sweep (distance-weighted ENM)
+| cutoff (Å) | pairs | ⟨degree⟩ | components | zero modes | Pearson r | Spearman ρ | masked r | MSF corr vs 12 Å |
+|------------|-------|----------|------------|------------|-----------|------------|----------|------------------|
+| 8          | 632   | 9.7984   | 1          | 6          | 0.6122    | 0.6502     | 0.4711   | 0.8086           |
+| 10         | 1131  | 17.5349  | 1          | 6          | 0.5649    | 0.6944     | 0.4499   | 0.9883           |
+| 12         | 1792  | 27.7829  | 1          | 6          | 0.5653    | 0.7386     | 0.4750   | 1                |
+| 14         | 2549  | 39.5194  | 1          | 6          | 0.5633    | 0.7554     | 0.4823   | 0.9917           |
+| 15         | 2983  | 46.2481  | 1          | 6          | 0.5628    | 0.7557     | 0.4903   | 0.9856           |
+| 18         | 4221  | 65.4419  | 1          | 6          | 0.6255    | 0.7420     | 0.5629   | 0.9540           |
+  [PASS] graph connected for 10–15 Å
+  [PASS] 6 zero modes for 10–15 Å
+  [PASS] r stable across 10–15 Å  (spread 0.002)
+  [PASS] MSF profile stable across 10–15 Å  (min corr 0.986)
+  [note] the r maximum lies outside the 10–15 Å plateau (18.0 Å): choose the cutoff for graph robustness, not for maximal r, and say so.
+
+=== Pillar B: ProDy ANM cross-check ===
+  [PASS] [constant spring, 15 Å] Julia Hessian has 6 zero modes  (6)
+  [PASS] [constant spring, 15 Å] ProDy modes orthonormal  (9.8e-12)
+  [PASS] [constant spring, 15 Å] eigenvalues agree  (max rel. diff 3.15e-13)
+  [PASS] [constant spring, 15 Å] RMSIP(10)  (1.000000)
+  [PASS] [constant spring, 15 Å] RMSIP(20)  (1.000000)
+  [PASS] [distance-weighted, 12 Å] Julia Hessian has 6 zero modes  (6)
+  [PASS] [distance-weighted, 12 Å] ProDy modes orthonormal  (1.0e-11)
+  [PASS] [distance-weighted, 12 Å] eigenvalues agree  (max rel. diff 3.86e-13)
+  [PASS] [distance-weighted, 12 Å] RMSIP(10)  (1.000000)
+  [PASS] [distance-weighted, 12 Å] RMSIP(20)  (1.000000)
+
+written: 1aki_bfactors.tsv, 1aki_dccm.tsv, 1aki_sweep.tsv, 1aki_mode_7.pdb
+
+VALIDATION SUMMARY — distance-weighted ENM on 1AKI
+| Pillar        | Check                                                    | Value                         | Criterion     | Status |
+|---------------|----------------------------------------------------------|-------------------------------|---------------|--------|
+| Input         | Cα count == 129 (1AKI)                                   | 129                           | 129           | PASS   |
+| Input         | single chain                                             | A                             | 1 chain       | PASS   |
+| Input         | no duplicate residue numbers                             |                               |               | PASS   |
+| Input         | all B-factors present                                    |                               |               | PASS   |
+| Input         | all B-factors positive                                   | min 10.60                     | > 0           | PASS   |
+| Input         | all residues have a mass                                 | 20 types                      |               | PASS   |
+| E consistency | Hessian symmetric                                        |                               |               | PASS   |
+| E consistency | exactly 6 zero modes                                     | 6                             | 6             | PASS   |
+| E consistency | Cα graph connected                                       | 1 component(s)                | 1             | PASS   |
+| A B-factors   | calibrated γ [kJ/mol]                                    | 173.306                       |               | INFO   |
+| A B-factors   | k_eff(4 Å) / k_eff(12 Å) [kJ/(mol·Å²)]                   | 10.832 / 1.204                |               | INFO   |
+| A B-factors   | Pearson r                                                | 0.5653                        |               | INFO   |
+| A B-factors   | Spearman ρ                                               | 0.7386                        |               | INFO   |
+| A B-factors   | Pearson r in sanity band                                 | 0.5653                        | 0.40–0.85     | PASS   |
+| A B-factors   | Spearman ρ in sanity band                                | 0.7386                        | 0.40–0.90     | PASS   |
+| A B-factors   | Pearson and Spearman consistent                          | Δ = 0.173                     | < 0.20        | PASS   |
+| A B-factors   | MSF profile insensitive to the mass model                | 0.5653 vs 0.5649              | Δr < 0.05     | PASS   |
+| A B-factors   | masked r ≥ 0.35                                          | 0.4750                        | ≥ 0.35        | PASS   |
+| A B-factors   | r on the high-B residues (B ≥ μ+σ)                       | 0.2022                        |               | INFO   |
+| A B-factors   | baseline: inverse neighbour count (12 Å), Pearson r      | 0.7352                        |               | INFO   |
+| D null        | shuffled r centred on 0                                  | mean -0.0029                  | |mean| < 0.15 | PASS   |
+| D null        | observed r beats the null                                | p = 0.0010 (floor 0.0010)     | p < 0.01      | PASS   |
+| E consistency | scale identity dr = r·s₀/s_affine (code consistency)     | 2.4261 vs 2.4261              | rtol 1e-6     | PASS   |
+| E consistency | affine baseline B0 physical (0 ≤ B0 ≤ ⟨B⟩)               | B0 = 14.51 Å², ⟨B⟩ = 17.58 Å² | 0 ≤ B0 ≤ ⟨B⟩  | PASS   |
+| E consistency | std(b_calc)/std(b_exp), zero-intercept fit               | 2.426                         |               | INFO   |
+| E consistency | γ_affine / γ_zero-intercept                              | 4.29                          |               | INFO   |
+| E consistency | zero modes at calibrated γ                               | 6                             | 6             | PASS   |
+| E consistency | no imaginary non-zero modes                              | 0                             | 0             | PASS   |
+| E consistency | softest mode in sanity band                              | 3.76 cm⁻¹                     | 1–15 cm⁻¹     | PASS   |
+| E consistency | highest Cα mode ≤ 250 cm⁻¹                               | 55.1 cm⁻¹                     | ≤ 250 cm⁻¹    | PASS   |
+| E consistency | DCCM diagonal == 1                                       |                               |               | PASS   |
+| E consistency | DCCM symmetric                                           |                               |               | PASS   |
+| E consistency | DCCM entries in [-1, 1]                                  | [-0.22, 1.00]                 |               | PASS   |
+| E consistency | mean abs(off-diagonal) DCCM                              | 0.065                         |               | INFO   |
+| C robustness  | mode shapes independent of γ (sanity)                    | RMSIP = 1.0000000000          | > 1 − 1e-8    | PASS   |
+| C robustness  | graph connected for 10–15 Å                              |                               |               | PASS   |
+| C robustness  | 6 zero modes for 10–15 Å                                 |                               |               | PASS   |
+| C robustness  | r stable across 10–15 Å                                  | spread 0.002                  | < 0.10        | PASS   |
+| C robustness  | MSF profile stable across 10–15 Å                        | min corr 0.986                | > 0.90        | PASS   |
+| B ProDy       | [constant spring, 15 Å] Julia Hessian has 6 zero modes   | 6                             | 6             | PASS   |
+| B ProDy       | [constant spring, 15 Å] ProDy modes orthonormal          | 9.8e-12                       |               | PASS   |
+| B ProDy       | [constant spring, 15 Å] eigenvalues agree                | max rel. diff 3.15e-13        | < 1e-6        | PASS   |
+| B ProDy       | [constant spring, 15 Å] RMSIP(10)                        | 1.000000                      | > 0.999       | PASS   |
+| B ProDy       | [constant spring, 15 Å] RMSIP(20)                        | 1.000000                      | > 0.999       | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] Julia Hessian has 6 zero modes | 6                             | 6             | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] ProDy modes orthonormal        | 1.0e-11                       |               | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] eigenvalues agree              | max rel. diff 3.86e-13        | < 1e-6        | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] RMSIP(10)                      | 1.000000                      | > 0.999       | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] RMSIP(20)                      | 1.000000                      | > 0.999       | PASS   |
+
+Notes:
+  - masked r (0.475) < full r (0.565): the removed residues carry much of the signal. Report both.
+  - r on the most flexible residues (0.202) is below the overall r (0.565): high-B regions are dominated by static disorder / multi-basin motion that a harmonic single-structure ENM does not describe.
+  - the DWENM (r = 0.565) does NOT clearly beat simple packing (r = 0.735): B-factor agreement alone does not show that the elastic network adds information beyond local density. Say so in the thesis.
+  - zero-intercept fit gives std ratio 2.43 = r (0.565) × s₀/s_affine (4.29): the one-scalar fit has to reproduce the mean B (baseline B0 = 14.5 Å² of ⟨B⟩ = 17.6 Å²) and therefore over-disperses the profile. γ differs by a factor 4.3 between the two calibrations, so absolute frequencies differ by 2.1×. Report γ as a range, or state the calibration used.
+  - frequencies are of the coarse-grained, B-factor-scaled network: collective-mode frequencies, not vibrational frequencies of the protein.
+  - the r maximum lies outside the 10–15 Å plateau (18.0 Å): choose the cutoff for graph robustness, not for maximal r, and say so.
+
+============================================================
+ALL CHECKS PASSED (40 passed)
+============================================================
+
+HERE ARE THE RESULTS PRODUCED BY THE OLD VALIDATE_MODEL_CODE WITH 1 FAILED AND 38 PASSED
+=== Structure ===
+  file     : 1aki.pdb
+  Cα atoms : 129
+  [PASS] Cα count == 129 (1AKI)  (129)
+  [PASS] single chain  (A)
+  [PASS] no duplicate residue numbers
+  [PASS] all B-factors present
+  [PASS] all B-factors positive  (min 10.60)
+  [PASS] all residues have a mass  (20 types)
+
+=== Pillar A: B-factor validation (cutoff 12.0 Å) ===
+  [PASS] Hessian symmetric
+  [PASS] exactly 6 zero modes  (6)
+  [PASS] Cα graph connected  (1 component(s))
+  graph    : 1792 pairs, ⟨degree⟩ = 27.78
+  γ            = 173.3063 kJ/mol            (k = γ/r²)
+  k_eff(4 Å)   = 10.832   k_eff(12 Å) = 1.204  kJ/(mol·Å²)
+  Pearson r    = 0.5653   (unweighted model: 0.5649)
+  Spearman ρ   = 0.7386
+  [info] calibrated γ [kJ/mol]  (173.306)
+  [info] k_eff(4 Å) / k_eff(12 Å) [kJ/(mol·Å²)]  (10.832 / 1.204)
+  [info] Pearson r  (0.5653)
+  [info] Spearman ρ  (0.7386)
+  [PASS] Pearson r in sanity band  (0.5653)
+  [PASS] Spearman ρ in sanity band  (0.7386)
+  [PASS] Pearson and Spearman consistent  (Δ = 0.173)
+  [PASS] MSF profile insensitive to the mass model  (0.5653 vs 0.5649)
+  masked r     = 0.4750   (114 / 129 residues; termini and B > μ+2σ removed)
+  r (B ≥ μ+σ)  = 0.2022   (15 residues)
+  [PASS] masked r ≥ 0.35  (0.4750)
+  [info] r on the high-B residues (B ≥ μ+σ)  (0.2022)
+  [note] masked r (0.475) < full r (0.565): the removed residues carry much of the signal. Report both.
+  [note] r on the most flexible residues (0.202) is below the overall r (0.565): high-B regions are dominated by static disorder / multi-basin motion that a harmonic single-structure ENM does not describe.
+  baseline 1/CN: Pearson r = 0.7352   Spearman ρ = 0.7726
+  [info] baseline: inverse neighbour count (12 Å), Pearson r  (0.7352)
+  [note] the DWENM (r = 0.565) does NOT clearly beat simple packing (r = 0.735): B-factor agreement alone does not show that the elastic network adds information beyond local density. Say so in the thesis.
+
+=== Pillar D: null control (shuffled B-factors, 1000 permutations) ===
+  shuffled r : mean -0.0029 | max +0.3106 | exceedances 0 | p = 0.0010
+  [PASS] shuffled r centred on 0  (mean -0.0029)
+  [PASS] observed r beats the null  (p = 0.0010 (floor 0.0010))
+
+=== Modes and frequencies (calibrated γ) ===
+  dynamic range std(b_calc)/std(b_exp) = 2.426
+  [FAIL] B-factor dynamic range plausible  (2.426)
+  [PASS] zero modes at calibrated γ  (6)
+  [PASS] no imaginary non-zero modes  (0)
+  softest mode 3.765 cm⁻¹ | highest mode 55.129 cm⁻¹
+  [PASS] softest mode in sanity band  (3.76 cm⁻¹)
+  [PASS] highest Cα mode ≤ 250 cm⁻¹  (55.1 cm⁻¹)
+  [note] frequencies are of the coarse-grained, B-factor-scaled network: collective-mode frequencies, not vibrational frequencies of the protein.
+
+First 10 non-zero modes (calibrated γ)
+| mode | eigenvalue (kJ/mol/amu/Å²) | frequency (cm⁻¹) |
+|------|----------------------------|------------------|
+| 7    | 0.0050                     | 3.7648           |
+| 8    | 0.0069                     | 4.4150           |
+| 9    | 0.0102                     | 5.3611           |
+| 10   | 0.0142                     | 6.3190           |
+| 11   | 0.0160                     | 6.7191           |
+| 12   | 0.0165                     | 6.8121           |
+| 13   | 0.0182                     | 7.1590           |
+| 14   | 0.0217                     | 7.8285           |
+| 15   | 0.0247                     | 8.3371           |
+| 16   | 0.0258                     | 8.5323           |
+
+=== DCCM ===
+  [PASS] DCCM diagonal == 1
+  [PASS] DCCM symmetric
+  [PASS] DCCM entries in [-1, 1]  ([-0.22, 1.00])
+  [info] mean abs(off-diagonal) DCCM  (0.065)
+
+=== Pillar C: γ-invariance (tautological: scaling a matrix keeps its eigenvectors) ===
+  [PASS] mode shapes independent of γ (sanity)  (RMSIP = 1.0000000000)
+
+=== Pillar C: cutoff sweep ===
+
+Cutoff sweep (distance-weighted ENM)
+| cutoff (Å) | pairs | ⟨degree⟩ | components | zero modes | Pearson r | Spearman ρ | masked r | MSF corr vs 12 Å |
+|------------|-------|----------|------------|------------|-----------|------------|----------|------------------|
+| 8          | 632   | 9.7984   | 1          | 6          | 0.6122    | 0.6502     | 0.4711   | 0.8086           |
+| 10         | 1131  | 17.5349  | 1          | 6          | 0.5649    | 0.6944     | 0.4499   | 0.9883           |
+| 12         | 1792  | 27.7829  | 1          | 6          | 0.5653    | 0.7386     | 0.4750   | 1                |
+| 14         | 2549  | 39.5194  | 1          | 6          | 0.5633    | 0.7554     | 0.4823   | 0.9917           |
+| 15         | 2983  | 46.2481  | 1          | 6          | 0.5628    | 0.7557     | 0.4903   | 0.9856           |
+| 18         | 4221  | 65.4419  | 1          | 6          | 0.6255    | 0.7420     | 0.5629   | 0.9540           |
+  [PASS] graph connected for 10–15 Å
+  [PASS] 6 zero modes for 10–15 Å
+  [PASS] r stable across 10–15 Å  (spread 0.002)
+  [PASS] MSF profile stable across 10–15 Å  (min corr 0.986)
+  [note] the r maximum lies outside the 10–15 Å plateau (18.0 Å): choose the cutoff for graph robustness, not for maximal r, and say so.
+
+=== Pillar B: ProDy ANM cross-check ===
+  [PASS] [constant spring, 15 Å] Julia Hessian has 6 zero modes  (6)
+  [PASS] [constant spring, 15 Å] ProDy modes orthonormal  (9.8e-12)
+  [PASS] [constant spring, 15 Å] eigenvalues agree  (max rel. diff 3.15e-13)
+  [PASS] [constant spring, 15 Å] RMSIP(10)  (1.000000)
+  [PASS] [constant spring, 15 Å] RMSIP(20)  (1.000000)
+  [PASS] [distance-weighted, 12 Å] Julia Hessian has 6 zero modes  (6)
+  [PASS] [distance-weighted, 12 Å] ProDy modes orthonormal  (1.0e-11)
+  [PASS] [distance-weighted, 12 Å] eigenvalues agree  (max rel. diff 3.86e-13)
+  [PASS] [distance-weighted, 12 Å] RMSIP(10)  (1.000000)
+  [PASS] [distance-weighted, 12 Å] RMSIP(20)  (1.000000)
+
+written: 1aki_bfactors.tsv, 1aki_dccm.tsv, 1aki_sweep.tsv, 1aki_mode_7.pdb
+
+VALIDATION SUMMARY — distance-weighted ENM on 1AKI
+| Pillar        | Check                                                    | Value                     | Criterion     | Status |
+|---------------|----------------------------------------------------------|---------------------------|---------------|--------|
+| Input         | Cα count == 129 (1AKI)                                   | 129                       | 129           | PASS   |
+| Input         | single chain                                             | A                         | 1 chain       | PASS   |
+| Input         | no duplicate residue numbers                             |                           |               | PASS   |
+| Input         | all B-factors present                                    |                           |               | PASS   |
+| Input         | all B-factors positive                                   | min 10.60                 | > 0           | PASS   |
+| Input         | all residues have a mass                                 | 20 types                  |               | PASS   |
+| E consistency | Hessian symmetric                                        |                           |               | PASS   |
+| E consistency | exactly 6 zero modes                                     | 6                         | 6             | PASS   |
+| E consistency | Cα graph connected                                       | 1 component(s)            | 1             | PASS   |
+| A B-factors   | calibrated γ [kJ/mol]                                    | 173.306                   |               | INFO   |
+| A B-factors   | k_eff(4 Å) / k_eff(12 Å) [kJ/(mol·Å²)]                   | 10.832 / 1.204            |               | INFO   |
+| A B-factors   | Pearson r                                                | 0.5653                    |               | INFO   |
+| A B-factors   | Spearman ρ                                               | 0.7386                    |               | INFO   |
+| A B-factors   | Pearson r in sanity band                                 | 0.5653                    | 0.40–0.85     | PASS   |
+| A B-factors   | Spearman ρ in sanity band                                | 0.7386                    | 0.40–0.90     | PASS   |
+| A B-factors   | Pearson and Spearman consistent                          | Δ = 0.173                 | < 0.20        | PASS   |
+| A B-factors   | MSF profile insensitive to the mass model                | 0.5653 vs 0.5649          | Δr < 0.05     | PASS   |
+| A B-factors   | masked r ≥ 0.35                                          | 0.4750                    | ≥ 0.35        | PASS   |
+| A B-factors   | r on the high-B residues (B ≥ μ+σ)                       | 0.2022                    |               | INFO   |
+| A B-factors   | baseline: inverse neighbour count (12 Å), Pearson r      | 0.7352                    |               | INFO   |
+| D null        | shuffled r centred on 0                                  | mean -0.0029              | |mean| < 0.15 | PASS   |
+| D null        | observed r beats the null                                | p = 0.0010 (floor 0.0010) | p < 0.01      | PASS   |
+| E consistency | B-factor dynamic range plausible                         | 2.426                     | 0.2–1.2       | FAIL   |
+| E consistency | zero modes at calibrated γ                               | 6                         | 6             | PASS   |
+| E consistency | no imaginary non-zero modes                              | 0                         | 0             | PASS   |
+| E consistency | softest mode in sanity band                              | 3.76 cm⁻¹                 | 1–15 cm⁻¹     | PASS   |
+| E consistency | highest Cα mode ≤ 250 cm⁻¹                               | 55.1 cm⁻¹                 | ≤ 250 cm⁻¹    | PASS   |
+| E consistency | DCCM diagonal == 1                                       |                           |               | PASS   |
+| E consistency | DCCM symmetric                                           |                           |               | PASS   |
+| E consistency | DCCM entries in [-1, 1]                                  | [-0.22, 1.00]             |               | PASS   |
+| E consistency | mean abs(off-diagonal) DCCM                              | 0.065                     |               | INFO   |
+| C robustness  | mode shapes independent of γ (sanity)                    | RMSIP = 1.0000000000      | > 1 − 1e-8    | PASS   |
+| C robustness  | graph connected for 10–15 Å                              |                           |               | PASS   |
+| C robustness  | 6 zero modes for 10–15 Å                                 |                           |               | PASS   |
+| C robustness  | r stable across 10–15 Å                                  | spread 0.002              | < 0.10        | PASS   |
+| C robustness  | MSF profile stable across 10–15 Å                        | min corr 0.986            | > 0.90        | PASS   |
+| B ProDy       | [constant spring, 15 Å] Julia Hessian has 6 zero modes   | 6                         | 6             | PASS   |
+| B ProDy       | [constant spring, 15 Å] ProDy modes orthonormal          | 9.8e-12                   |               | PASS   |
+| B ProDy       | [constant spring, 15 Å] eigenvalues agree                | max rel. diff 3.15e-13    | < 1e-6        | PASS   |
+| B ProDy       | [constant spring, 15 Å] RMSIP(10)                        | 1.000000                  | > 0.999       | PASS   |
+| B ProDy       | [constant spring, 15 Å] RMSIP(20)                        | 1.000000                  | > 0.999       | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] Julia Hessian has 6 zero modes | 6                         | 6             | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] ProDy modes orthonormal        | 1.0e-11                   |               | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] eigenvalues agree              | max rel. diff 3.86e-13    | < 1e-6        | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] RMSIP(10)                      | 1.000000                  | > 0.999       | PASS   |
+| B ProDy       | [distance-weighted, 12 Å] RMSIP(20)                      | 1.000000                  | > 0.999       | PASS   |
+
+Notes:
+  - masked r (0.475) < full r (0.565): the removed residues carry much of the signal. Report both.
+  - r on the most flexible residues (0.202) is below the overall r (0.565): high-B regions are dominated by static disorder / multi-basin motion that a harmonic single-structur
+  - the DWENM (r = 0.565) does NOT clearly beat simple packing (r = 0.735): B-factor agreement alone does not show that the elastic network adds information beyond local density. Say so in the thesis.
+  - frequencies are of the coarse-grained, B-factor-scaled network: collective-mode frequencies, not vibrational frequencies of the protein.
+  - the r maximum lies outside the 10–15 Å plateau (18.0 Å): choose the cutoff for graph robustness, not for maximal r, and say so.
+
+============================================================
+1 CHECK(S) FAILED (38 passed):
+  - B-factor dynamic range plausible
+============================================================
+
+RESULTS OF ALPHA_SWEEP AND OTHER REQUEST BY KI_UNI_MAINZ
+PS <PROJECT_ROOT>> Select-String -Path "test\nma_best_final\1aki.pdb" -Pattern "^REMARK   3" | Select-Object -First 60
+
+test\nma_best_final\1aki.pdb:27:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:28:REMARK   3 REFINEMENT.                                                          
+test\nma_best_final\1aki.pdb:29:REMARK   3   PROGRAM     : GPRLSA                                               
+test\nma_best_final\1aki.pdb:30:REMARK   3   AUTHORS     : FUREY                                                
+test\nma_best_final\1aki.pdb:31:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:32:REMARK   3  DATA USED IN REFINEMENT.                                            
+test\nma_best_final\1aki.pdb:33:REMARK   3   RESOLUTION RANGE HIGH (ANGSTROMS) : 1.50                           
+test\nma_best_final\1aki.pdb:34:REMARK   3   RESOLUTION RANGE LOW  (ANGSTROMS) : 10.00                          
+test\nma_best_final\1aki.pdb:35:REMARK   3   DATA CUTOFF            (SIGMA(F)) : 1.000                          
+test\nma_best_final\1aki.pdb:36:REMARK   3   COMPLETENESS FOR RANGE        (%) : 91.1                           
+test\nma_best_final\1aki.pdb:37:REMARK   3   NUMBER OF REFLECTIONS             : 16327                          
+test\nma_best_final\1aki.pdb:38:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:39:REMARK   3  FIT TO DATA USED IN REFINEMENT.                                     
+test\nma_best_final\1aki.pdb:40:REMARK   3   CROSS-VALIDATION METHOD          : NULL                            
+test\nma_best_final\1aki.pdb:41:REMARK   3   FREE R VALUE TEST SET SELECTION  : NULL                            
+test\nma_best_final\1aki.pdb:42:REMARK   3   R VALUE     (WORKING + TEST SET) : NULL                            
+test\nma_best_final\1aki.pdb:43:REMARK   3   R VALUE            (WORKING SET) : 0.212                           
+test\nma_best_final\1aki.pdb:44:REMARK   3   FREE R VALUE                     : NULL                            
+test\nma_best_final\1aki.pdb:45:REMARK   3   FREE R VALUE TEST SET SIZE   (%) : NULL                            
+test\nma_best_final\1aki.pdb:46:REMARK   3   FREE R VALUE TEST SET COUNT      : NULL                            
+test\nma_best_final\1aki.pdb:47:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:48:REMARK   3  FIT/AGREEMENT OF MODEL WITH ALL DATA.                               
+test\nma_best_final\1aki.pdb:49:REMARK   3   R VALUE   (WORKING + TEST SET, NO CUTOFF) : NULL                   
+test\nma_best_final\1aki.pdb:50:REMARK   3   R VALUE          (WORKING SET, NO CUTOFF) : NULL                   
+test\nma_best_final\1aki.pdb:51:REMARK   3   FREE R VALUE                  (NO CUTOFF) : NULL                   
+test\nma_best_final\1aki.pdb:52:REMARK   3   FREE R VALUE TEST SET SIZE (%, NO CUTOFF) : NULL                   
+test\nma_best_final\1aki.pdb:53:REMARK   3   FREE R VALUE TEST SET COUNT   (NO CUTOFF) : NULL                   
+test\nma_best_final\1aki.pdb:54:REMARK   3   TOTAL NUMBER OF REFLECTIONS   (NO CUTOFF) : NULL                   
+test\nma_best_final\1aki.pdb:55:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:56:REMARK   3  NUMBER OF NON-HYDROGEN ATOMS USED IN REFINEMENT.                    
+test\nma_best_final\1aki.pdb:57:REMARK   3   PROTEIN ATOMS            : 1001                                    
+test\nma_best_final\1aki.pdb:58:REMARK   3   NUCLEIC ACID ATOMS       : 0                                       
+test\nma_best_final\1aki.pdb:59:REMARK   3   HETEROGEN ATOMS          : 0                                       
+test\nma_best_final\1aki.pdb:60:REMARK   3   SOLVENT ATOMS            : 78                                      
+test\nma_best_final\1aki.pdb:61:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:62:REMARK   3  B VALUES.                                                           
+test\nma_best_final\1aki.pdb:63:REMARK   3   FROM WILSON PLOT           (A**2) : NULL                           
+test\nma_best_final\1aki.pdb:64:REMARK   3   MEAN B VALUE      (OVERALL, A**2) : NULL                           
+test\nma_best_final\1aki.pdb:65:REMARK   3   OVERALL ANISOTROPIC B VALUE.                                       
+test\nma_best_final\1aki.pdb:66:REMARK   3    B11 (A**2) : NULL                                                 
+test\nma_best_final\1aki.pdb:67:REMARK   3    B22 (A**2) : NULL                                                 
+test\nma_best_final\1aki.pdb:69:REMARK   3    B12 (A**2) : NULL                                                 
+test\nma_best_final\1aki.pdb:70:REMARK   3    B13 (A**2) : NULL                                                 
+test\nma_best_final\1aki.pdb:71:REMARK   3    B23 (A**2) : NULL                                                 
+test\nma_best_final\1aki.pdb:72:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:73:REMARK   3  ESTIMATED COORDINATE ERROR.                                         
+test\nma_best_final\1aki.pdb:74:REMARK   3   ESD FROM LUZZATI PLOT        (A) : NULL                            
+test\nma_best_final\1aki.pdb:75:REMARK   3   ESD FROM SIGMAA              (A) : NULL                            
+test\nma_best_final\1aki.pdb:76:REMARK   3   LOW RESOLUTION CUTOFF        (A) : 10.0                            
+test\nma_best_final\1aki.pdb:77:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:78:REMARK   3  RMS DEVIATIONS FROM IDEAL VALUES.                                   
+test\nma_best_final\1aki.pdb:80:REMARK   3    BOND LENGTH                     (A) : 0.009 ; 0.010               
+test\nma_best_final\1aki.pdb:81:REMARK   3    ANGLE DISTANCE                  (A) : 0.003 ; 0.025               
+test\nma_best_final\1aki.pdb:82:REMARK   3    INTRAPLANAR 1-4 DISTANCE        (A) : 0.024 ; 0.020               
+test\nma_best_final\1aki.pdb:83:REMARK   3    H-BOND OR METAL COORDINATION    (A) : NULL  ; NULL                
+test\nma_best_final\1aki.pdb:84:REMARK   3                                                                      
+test\nma_best_final\1aki.pdb:85:REMARK   3   PLANE RESTRAINT                  (A) : 0.033 ; 0.030               
+test\nma_best_final\1aki.pdb:86:REMARK   3   CHIRAL-CENTER RESTRAINT       (A**3) : 0.212 ; 0.200               
+
+RESULTS OF ALPHA_SWEEP BY KI_UNI_MAINZ
+
+PS <PROJECT_ROOT>> julia  --project=. test/nma_best_final/alpha_sweep.jl
+α-sweep — decay law k = γ/r^α at fixed k_eff(3.8 Å) = 12.0
+|--------|-------------------|-----------|--------------|-----------|------------|--------|----------|--------|---------|-----------|--------------|------------------|
+| 0      | 12                | 0.3853    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 1.8193    | 22.8247      | 1                |
+| 0.5000 | 23.3923           | 0.1014    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 1.3030    | 16.3478      | 1                |
+| 1      | 45.6000           | 0.0267    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.9333    | 11.7088      | 1                |
+| 1.5000 | 88.8908           | 0.0070    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.6684    | 8.3863       | 1.0000           |
+| 2      | 173.2800          | 0.0018    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.4788    | 6.0065       | 1                |
+
+| 0      | 12                | 0.3853    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 1.8193    | 22.8247      | 1                |
+| 1      | 45.6000           | 0.0267    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.9333    | 11.7088      | 1                |
+| 1.5000 | 88.8908           | 0.0070    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.6684    | 8.3863       | 1.0000           |
+| 2      | 173.2800          | 0.0018    | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.4788    | 6.0065       | 1                |
+| 3      | 658.4640          | 1.280e-04 | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 0.2456    | 3.0813       | 1                |
+PS <PROJECT_ROOT>> # is the α literal still there? (old bug)
+PS <PROJECT_ROOT>> Select-String -Path "test\nma_best_final\alpha_sweep.jl" -Pattern "
+
+test\nma_best_final\alpha_sweep.jl:19:kfun_alpha(γ, α) = α == 0 ? (r -> γ) : (r -> γ / r^α)
+test\nma_best_final\alpha_sweep.jl:62:    H  = build_hessian(coords, kfun_alpha(γ, 1.0); cutoff=CUTOFF)   # γ=1 reference
+test\nma_best_final\alpha_sweep.jl:82:                    covariance_mw(build_hessian(coords, kfun_alpha(γ,1.0); cutoff=CUTOFF),
+
+
+PS <PROJECT_ROOT>> 
+PS <PROJECT_ROOT>> # does the new file contain the new sections?
+PS <PROJECT_ROOT>> Select-String -Path "test\nma_best_final\alpha_sweep.jl" -Pattern "SWEEP OK|Trends|k\(12\)/k\(3\.8\)"
+PS <PROJECT_ROOT>> 
+PS <PROJECT_ROOT>> # when was it last written?
+PS <PROJECT_ROOT>> Get-Item "test\nma_best_final\alpha_sweep.jl" | Select-Object LastWriteTime, Length
+
+LastWriteTime        Length
+-------------        ------
+11/5/2026 3:33:00 AM   3801
+
+
+PS <PROJECT_ROOT>> julia  --project=. test/nma_best_final/alpha_sweep.jl
+
+=== α-sweep: decay law k = γ/r^α at fixed k_eff(3.8 Å) = 12.0 ===
+  file        : 1aki.pdb
+  Cα atoms    : 129
+  cutoff      : 12.0 Å  (1792 pairs, ⟨degree⟩ = 27.78, 1 component(s))
+  B-factors   : mean 17.58 Å², 114/129 residues in the masked set
+
+α-sweep — decay law k = γ/r^α at fixed k_eff(3.8 Å) = 12.0 kJ/(mol·Å²)
+| α      | γ_α (norm.) | γ_zero    | γ_affine  | γ_aff/γ_zero | Pearson r | Spearman ρ | ρ−r    | masked r | dr     | B0 (Å²) | ω₁ (cm⁻¹) | ω_max (cm⁻¹) | MSF corr vs α=2 | ⟨|DCCM|⟩ | k(8)/k(3.8) | k(12)/k(3.8) |
+|--------|-------------|-----------|-----------|--------------|-----------|------------|--------|----------|--------|---------|-----------|--------------|-----------------|----------|-------------|--------------|
+| 0      | 12          | 2.7766    | 12.4688   | 4.4906       | 0.5466    | 0.7552     | 0.2087 | 0.4636   | 2.4544 | 14.6992 | 4.2123    | 49.0795      | 0.9868          | 0.0473   | 1           | 1            |
+| 0.5000 | 23.3923     | 7.8994    | 35.1322   | 4.4475       | 0.5484    | 0.7522     | 0.2038 | 0.4648   | 2.4390 | 14.6466 | 4.1045    | 49.2006      | 0.9918          | 0.0508   | 0.6892      | 0.5627       |
+| 1      | 45.6000     | 22.2444   | 97.7152   | 4.3928       | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 | 3.9906    | 50.0666      | 0.9961          | 0.0549   | 0.4750      | 0.3167       |
+| 1.5000 | 88.8908     | 62.2051   | 269.8079  | 4.3374       | 0.5586    | 0.7462     | 0.1876 | 0.4714   | 2.4227 | 14.5397 | 3.8756    | 51.9567      | 0.9990          | 0.0596   | 0.3274      | 0.1782       |
+| 2      | 173.2800    | 173.3063  | 743.8434  | 4.2921       | 0.5653    | 0.7386     | 0.1733 | 0.4750   | 2.4261 | 14.5071 | 3.7648    | 55.1286      | 1               | 0.0649   | 0.2256      | 0.1003       |
+| 3      | 658.4640    | 1341.6137 | 5702.9880 | 4.2508       | 0.5777    | 0.7309     | 0.1532 | 0.4789   | 2.4555 | 14.5110 | 3.5697    | 66.3980      | 0.9961          | 0.0768   | 0.1072      | 0.0318       |
+
+=== Trends ===
+  best Pearson r   : α = 3.0  (r = 0.5777)
+  best Spearman ρ  : α = 0.0  (ρ = 0.7552)
+  dr monotone decreasing in α      : no
+  ρ−r monotone decreasing in α     : yes
+  MSF profile similarity to α=2    : min 0.9868 (α = 0.0)
+
+=== Reproduction check (α = 2 vs validate_model.jl) ===
+┌ Warning: Assignment to `allok` in soft scope is ambiguous because a global variable by the same name exists: `allok` will be treated as a new local. Disambiguate by using `local allok` to suppress this warning or `global allok` to assign to the existing global variable.
+└ @ <PROJECT_ROOT>\test\nma_best_final\alpha_sweep.jl:253
+ERROR: LoadError: UndefVarError: `allok` not defined in local scope
+Suggestion: check for an assignment to a local variable that shadows a global of the same name.
+Stacktrace:
+ [1] top-level scope
+   @ <PROJECT_ROOT>\test\nma_best_final\alpha_sweep.jl:253
+ [2] include(mod::Module, _path::String)
+   @ Base .\Base.jl:306
+ [3] exec_options(opts::Base.JLOptions)
+   @ Base .\client.jl:317
+ [4] _start()
+   @ Base .\client.jl:550
+in expression starting at <PROJECT_ROOT>\test\nma_best_final\alpha_sweep.jl:251
+PS <PROJECT_ROOT>> julia  --project=. test/nma_best_final/alpha_sweep.jl
+alpha_sweep.jl v3  —  α passed correctly, no double γ
+
+=== α-sweep v3: k = γ/r^α at fixed k_eff(3.8 Å) = 12.0 kJ/(mol·Å²) ===
+  file      : 1aki.pdb
+  Cα atoms  : 129
+  cutoff    : 12.0 Å  (1792 pairs, ⟨degree⟩ = 27.78, 1 component(s))
+  B-factors : mean 17.58 Å², 114/129 residues masked
+
+Table 1 — calibration and amplitude (α-sweep, k_eff(3.8 Å) = 12.0)
+| α      | γ_α (norm.) | γ_zero    | γ_affine  | γ_aff/γ_zero | implied k_eff(3.8) [kJ/mol/Å²] | Pearson r | Spearman ρ | ρ−r    | masked r | dr     | B0 (Å²) |
+|--------|-------------|-----------|-----------|--------------|--------------------------------|-----------|------------|--------|----------|--------|---------|
+| 0      | 12          | 2.7766    | 12.4688   | 4.4906       | 2.7766                         | 0.5466    | 0.7552     | 0.2087 | 0.4636   | 2.4544 | 14.6992 |
+| 0.5000 | 23.3923     | 7.8994    | 35.1322   | 4.4475       | 4.0523                         | 0.5484    | 0.7522     | 0.2038 | 0.4648   | 2.4390 | 14.6466 |
+| 1      | 45.6000     | 22.2444   | 97.7152   | 4.3928       | 5.8538                         | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 |
+| 1.5000 | 88.8908     | 62.2051   | 269.8079  | 4.3374       | 8.3975                         | 0.5586    | 0.7462     | 0.1876 | 0.4714   | 2.4227 | 14.5397 |
+| 2      | 173.2800    | 173.3063  | 743.8434  | 4.2921       | 12.0018                        | 0.5653    | 0.7386     | 0.1733 | 0.4750   | 2.4261 | 14.5071 |
+| 3      | 658.4640    | 1341.6137 | 5702.9880 | 4.2508       | 24.4499                        | 0.5777    | 0.7309     | 0.1532 | 0.4789   | 2.4555 | 14.5110 |
+
+Table 2 — dynamics and collectivity
+| α      | ω₁ (cm⁻¹) | ω_max (cm⁻¹) | MSF corr vs α=2 | ⟨|DCCM|⟩ all modes | ⟨|DCCM|⟩ top 10 | top/all | k(8)/k(3.8) | k(12)/k(3.8) |
+|--------|-----------|--------------|-----------------|--------------------|-----------------|---------|-------------|--------------|
+| 0      | 4.2123    | 49.0795      | 0.9868          | 0.0473             | 0.3167          | 6.6918  | 1           | 1            |
+| 0.5000 | 4.1045    | 49.2006      | 0.9918          | 0.0508             | 0.3137          | 6.1775  | 0.6892      | 0.5627       |
+| 1      | 3.9906    | 50.0666      | 0.9961          | 0.0549             | 0.3122          | 5.6880  | 0.4750      | 0.3167       |
+| 1.5000 | 3.8756    | 51.9567      | 0.9990          | 0.0596             | 0.3109          | 5.2154  | 0.3274      | 0.1782       |
+| 2      | 3.7648    | 55.1286      | 1               | 0.0649             | 0.3094          | 4.7670  | 0.2256      | 0.1003       |
+| 3      | 3.5697    | 66.3980      | 0.9961          | 0.0768             | 0.3055          | 3.9805  | 0.1072      | 0.0318       |
+
+=== Trends ===
+  dr    : min 2.4227 (α=1.5)  max 2.4555 (α=3.0)  spread 0.0329 (1.35%)
+  ρ−r   : 0.2087 (α=0.0) → 0.1532 (α=3.0)
+  MSF profile similarity to α=2 : min 0.9868 (α=0.0)
+  ⟨|DCCM|⟩ all  : 0.0473 → 0.0768  (+62.2%)
+  ⟨|DCCM|⟩ top10 : 0.3167 → 0.3055  (-3.5%)
+  dr monotone decreasing in α   : no
+  ρ−r monotone decreasing in α  : yes
+  ⟨|DCCM|⟩ monotone increasing : yes
+ERROR: LoadError: DomainError with -0.03877869937572534:
+sqrt was called with a negative real argument but will only return a complex result if called with a complex argument. Try sqrt(Complex(x)).
+DomainError detected in the user `f` function. This occurs when the domain of a function is violated.
+For example, `log(-1.0)` is undefined because `log` of a real number is defined to only output real
+numbers, but `log` of a negative number is complex valued and therefore Julia throws a DomainError
+by default. Cases to be aware of include:
+
+* `log(x)`, `sqrt(x)`, `cbrt(x)`, etc. where `x<0`
+* `x^y` for `x<0` floating point `y` (example: `(-1.0)^(1/2) == im`)
+
+Within the context of SciML, this error can occur within the solver process even if the domain constraint
+would not be violated in the solution due to adaptivity. For example, an ODE solver or optimization
+routine may check a step at `new_u` which violates the domain constraint, and if violated reject the
+step and use a smaller `dt`. However, the throwing of this error will have halted the solving process.
+
+Thus the recommended fix is to replace this function with the equivalent ones from NaNMath.jl
+(https://github.com/JuliaMath/NaNMath.jl) which returns a NaN instead of an error. The solver will then
+one could perform a domain transformation on the variables so that such an issue does not occur in the
+definition of `f`.
+
+For more information, check out the following FAQ page:
+<https://docs.sciml.ai/Optimization/stable/API/FAQ/#The-Solver-Seems-to-Violate-Constraints-During-the-Optimization,-Causing-DomainErrors,-What-Can-I-Do-About-That?>
+
+Stacktrace:
+ [1] throw_complex_domainerror(f::Symbol, x::Float64)
+   @ Base.Math .\math.jl:33
+ [2] sqrt(x::Float64)
+   @ Base.Math .\math.jl:627
+ [3] top-level scope
+   @ <PROJECT_ROOT>\test\nma_best_final\alpha_sweep.jl:262
+ [4] include(mod::Module, _path::String)
+   @ Base .\Base.jl:306
+ [5] exec_options(opts::Base.JLOptions)
+   @ Base .\client.jl:317
+ [6] _start()
+   @ Base .\client.jl:550
+in expression starting at <PROJECT_ROOT>\test\nma_best_final\alpha_sweep.jl:262
+PS <PROJECT_ROOT>> julia  --project=. test/nma_best_final/alpha_sweep.jl
+alpha_sweep.jl v3.1  —  α passed correctly, no double γ
+
+=== α-sweep v3.1: k = γ/r^α at fixed k_eff(3.8 Å) = 12.0 kJ/(mol·Å²) ===
+  file      : 1aki.pdb
+  Cα atoms  : 129
+  cutoff    : 12.0 Å  (1792 pairs, ⟨degree⟩ = 27.78, 1 component(s))
+  B-factors : mean 17.58 Å², 114/129 residues masked
+
+Table 1 — calibration and amplitude (α-sweep, k_eff(3.8 Å) = 12.0)
+| α      | γ_α (norm.) | γ_zero    | γ_affine  | γ_aff/γ_zero | implied k_eff(3.8) [kJ/mol/Å²] | Pearson r | Spearman ρ | ρ−r    | masked r | dr     | B0 (Å²) |
+|--------|-------------|-----------|-----------|--------------|--------------------------------|-----------|------------|--------|----------|--------|---------|
+| 0      | 12          | 2.7766    | 12.4688   | 4.4906       | 2.7766                         | 0.5466    | 0.7552     | 0.2087 | 0.4636   | 2.4544 | 14.6992 |
+| 0.5000 | 23.3923     | 7.8994    | 35.1322   | 4.4475       | 4.0523                         | 0.5484    | 0.7522     | 0.2038 | 0.4648   | 2.4390 | 14.6466 |
+| 1      | 45.6000     | 22.2444   | 97.7152   | 4.3928       | 5.8538                         | 0.5526    | 0.7489     | 0.1963 | 0.4677   | 2.4275 | 14.5898 |
+| 1.5000 | 88.8908     | 62.2051   | 269.8079  | 4.3374       | 8.3975                         | 0.5586    | 0.7462     | 0.1876 | 0.4714   | 2.4227 | 14.5397 |
+| 2      | 173.2800    | 173.3063  | 743.8434  | 4.2921       | 12.0018                        | 0.5653    | 0.7386     | 0.1733 | 0.4750   | 2.4261 | 14.5071 |
+| 3      | 658.4640    | 1341.6137 | 5702.9880 | 4.2508       | 24.4499                        | 0.5777    | 0.7309     | 0.1532 | 0.4789   | 2.4555 | 14.5110 |
+
+Table 2 — dynamics and collectivity
+| α      | ω₁ (cm⁻¹) | ω_max (cm⁻¹) | MSF corr vs α=2 | ⟨|DCCM|⟩ all modes | ⟨|DCCM|⟩ top 10 | top/all | k(8)/k(3.8) | k(12)/k(3.8) |
+|--------|-----------|--------------|-----------------|--------------------|-----------------|---------|-------------|--------------|
+| 0      | 4.2123    | 49.0795      | 0.9868          | 0.0473             | 0.3167          | 6.6918  | 1           | 1            |
+| 0.5000 | 4.1045    | 49.2006      | 0.9918          | 0.0508             | 0.3137          | 6.1775  | 0.6892      | 0.5627       |
+| 1      | 3.9906    | 50.0666      | 0.9961          | 0.0549             | 0.3122          | 5.6880  | 0.4750      | 0.3167       |
+| 1.5000 | 3.8756    | 51.9567      | 0.9990          | 0.0596             | 0.3109          | 5.2154  | 0.3274      | 0.1782       |
+| 2      | 3.7648    | 55.1286      | 1               | 0.0649             | 0.3094          | 4.7670  | 0.2256      | 0.1003       |
+| 3      | 3.5697    | 66.3980      | 0.9961          | 0.0768             | 0.3055          | 3.9805  | 0.1072      | 0.0318       |
+
+=== Trends ===
+  dr    : min 2.4227 (α=1.5)  max 2.4555 (α=3.0)  spread 0.0329 (1.35%)
+  B0    : min 14.507 (α=2.0)  max 14.699 (α=0.0)  spread 0.192 Å²
+  ρ−r   : 0.2087 (α=0.0) → 0.1532 (α=3.0)
+  MSF profile similarity to α=2 : min 0.9868 (α=0.0)
+  ⟨|DCCM|⟩ all  : 0.0473 → 0.0768  (+62.2%)
+  ⟨|DCCM|⟩ top10 : 0.3167 → 0.3055  (-3.5%)
+  ω_max/ω₁      : 11.65 → 18.60  (+59.6%)
+  dr monotone decreasing in α   : no
+  ρ−r monotone decreasing in α  : yes
+  ⟨|DCCM|⟩ monotone increasing : yes
+  ω_max/ω₁ monotone increasing  : yes
+  rough SE(r) at N=129, r≈0.57 : 0.0735
+
+=== Paired bootstrap over residues (1000 resamples, seed 20261105) ===
+
+Table 3 — paired bootstrap, 95% CI (Δ relative to α = 2)
+| α      | r      | r lo   | r hi   | ρ      | ρ lo   | ρ hi   | Δr      | Δr lo   | Δr hi  | Δρ      | Δρ lo   | Δρ hi  | verdict                    |
+|--------|--------|--------|--------|--------|--------|--------|---------|---------|--------|---------|---------|--------|----------------------------|
+| 0      | 0.5466 | 0.3909 | 0.7677 | 0.7552 | 0.6697 | 0.8224 | -0.0187 | -0.0503 | 0.0370 | 0.0167  | -0.0125 | 0.0486 | indistinguishable from α=2 |
+| 0.5000 | 0.5484 | 0.3918 | 0.7688 | 0.7522 | 0.6638 | 0.8185 | -0.0169 | -0.0424 | 0.0305 | 0.0136  | -0.0111 | 0.0412 | indistinguishable from α=2 |
+| 1      | 0.5526 | 0.3968 | 0.7709 | 0.7489 | 0.6581 | 0.8157 | -0.0127 | -0.0305 | 0.0211 | 0.0104  | -0.0073 | 0.0290 | indistinguishable from α=2 |
+| 1.5000 | 0.5586 | 0.4052 | 0.7687 | 0.7462 | 0.6559 | 0.8142 | -0.0067 | -0.0163 | 0.0111 | 0.0076  | -0.0023 | 0.0203 | indistinguishable from α=2 |
+| 2      | 0.5653 | 0.4126 | 0.7643 | 0.7386 | 0.6481 | 0.8060 | 0       | 0       | 0      | 0       | 0       | 0      | indistinguishable from α=2 |
+| 3      | 0.5777 | 0.4248 | 0.7613 | 0.7309 | 0.6394 | 0.7983 | 0.0124  | -0.0221 | 0.0324 | -0.0077 | -0.0255 | 0.0087 | indistinguishable from α=2 |
+
+=== DCCM difference map: α = 0 vs α = 2 ===
+  max |ΔD_ij| = 0.1970   mean |ΔD_ij| = 0.0188
+
+Table 4 — pairs whose correlation changes most between α = 0 and α = 2
+| resid i | resid j | |ΔD|   | D(α=0) | D(α=2) | ΔD      |
+|---------|---------|--------|--------|--------|---------|
+| 47      | 48      | 0.1970 | 0.2774 | 0.4744 | -0.1970 |
+| 46      | 47      | 0.1950 | 0.2340 | 0.4290 | -0.1950 |
+| 45      | 46      | 0.1931 | 0.3455 | 0.5386 | -0.1931 |
+| 100     | 101     | 0.1870 | 0.2084 | 0.3954 | -0.1870 |
+| 101     | 102     | 0.1843 | 0.1646 | 0.3489 | -0.1843 |
+| 110     | 111     | 0.1839 | 0.1828 | 0.3667 | -0.1839 |
+| 106     | 107     | 0.1828 | 0.1872 | 0.3700 | -0.1828 |
+| 113     | 114     | 0.1808 | 0.2249 | 0.4056 | -0.1808 |
+| 112     | 113     | 0.1801 | 0.2063 | 0.3865 | -0.1801 |
+| 128     | 129     | 0.1770 | 0.2305 | 0.4075 | -0.1770 |
+| 121     | 122     | 0.1766 | 0.2314 | 0.4080 | -0.1766 |
+| 7       | 8       | 0.1765 | 0.1313 | 0.3078 | -0.1765 |
+| 122     | 123     | 0.1760 | 0.1498 | 0.3258 | -0.1760 |
+| 99      | 100     | 0.1735 | 0.1966 | 0.3700 | -0.1735 |
+| 111     | 112     | 0.1733 | 0.1689 | 0.3421 | -0.1733 |
+
+=== Reproduction check (α = 2 vs validate_model.jl) ===
+  [PASS] Pearson r    got       0.5653   expected       0.5653
+  [PASS] Spearman ρ   got       0.7386   expected       0.7386
+  [PASS] γ_zero       got     173.3063   expected     173.3060
+  [PASS] ω₁ (cm⁻¹)    got       3.7648   expected       3.7650
+
+written: alpha_sweep.md, alpha_sweep.tsv, alpha_sweep_bootstrap.tsv, alpha_sweep_dccm_diff.tsv
+
+How to read
+  Table 1  dr flat in α    ⇒ amplitude error intrinsic, not the exponent.
+           B0 flat in α    ⇒ static offset is structural.
+           implied k_eff   rising with α ⇒ γ not identifiable from B-factors.
+  Table 2  ⟨|DCCM|⟩ all vs top ⇒ soft-mode effect or high-frequency artefact.
+           ω_max/ω₁        ⇒ spectral bandwidth, the cleanest α signal.
+  Table 3  CI containing 0 ⇒ no detectable α dependence at N = 129.
+  Table 4  spatial pattern of the collectivity change.
+
+============================================================
+SWEEP OK — α = 2 reproduces the validated run
+============================================================
+
+RESULTS OF ALPHA_SWEEP BY KI_UNI_MAINZ
+
+
+
+
+
+
+Welcome to Ubuntu 20.04.6 LTS (GNU/Linux 6.18.54.1-microsoft-standard-WSL2 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Mon Nov  2 13:07:08 CET 2026
+
+  System load:  0.47               Processes:             10
+  Usage of /:   7.7% of 250.92GB   Users logged in:       0
+  Memory usage: 11%                IPv4 address for eth0: 172.29.1.51
+  Swap usage:   0%
+
+  => /usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2 is using 100.0% of
+     96MB
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+22 updates can be applied immediately.
+13 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+
+This message is shown once a day. To disable it please create the
+/home/dyvaille/.hushlogin file.
+(base) dyvaille@DESKTOP-TUALF24:~$ cd "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final"
+(base) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ cd ~/cb1
+-bash: cd: /home/dyvaille/cb1: No such file or directory
+
+DIRECTORY WHERE CB1 IS FOUND   \\wsl.localhost\Ubuntu\home\dyvaille\cb1
+
+(base) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ conda activate prody311
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ mkdir -p ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ cd "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final"
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ cp 5TGZ.pdb 5TGZ_F238L.pdb mutate.py ~/cb1/
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ cd ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ pwd        # should print /home/dyvaille/cb1
+/home/dyvaille/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cat > ~/cb1/prep_cb1.py <<'EOF'
+> # usage: python prep_cb1.py in.pdb out.pdb seed      (env MD_STEPS sets MD length)
+> import sys, os, time
+> from openmm import app, unit, LangevinMiddleIntegrator, CustomExternalForce
+> from pdbfixer import PDBFixer
+>
+> inp, out, seed = sys.argv[1], sys.argv[2], int(sys.argv[3])
+> t0 = time.time()
+> def log(m): print(f"[{time.time()-t0:6.0f}s] {m}", flush=True)
+>
+> keep = []
+> for l in open(inp):
+>     if l.startswith("ATOM"):
+>         r = int(l[22:26])
+>         if 99 <= r <= 306:    keep.append(l[:21] + "A" + l[22:])
+>         elif 332 <= r <= 414: keep.append(l[:21] + "B" + l[22:])
+> open("_tmp_in_%d.pdb" % seed, "w").writelines(keep + ["END\n"])
+> log("selected CB1 residues")
+>
+> fx = PDBFixer("_tmp_in_%d.pdb" % seed)
+> fx.findMissingResidues(); fx.missingResidues = {}
+> fx.findNonstandardResidues(); fx.replaceNonstandardResidues()
+> fx.findMissingAtoms(); fx.addMissingAtoms()
+> fx.addMissingHydrogens(7.4)
+> log("PDBFixer done, atoms: %d" % fx.topology.getNumAtoms())
+>
+> ff = app.ForceField("amber14-all.xml", "implicit/obc2.xml")
+> system = ff.createSystem(fx.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds)
+> rest = CustomExternalForce("0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)")
+> rest.addGlobalParameter("k", 1000.0)
+> for n in ("x0", "y0", "z0"): rest.addPerParticleParameter(n)
+> for a in fx.topology.atoms():
+>     if a.name in ("N", "CA", "C", "O"):
+>         p = fx.positions[a.index].value_in_unit(unit.nanometer)
+>         rest.addParticle(a.index, [p[0], p[1], p[2]])
+> system.addForce(rest)
+>
+> integ = LangevinMiddleIntegrator(300*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
+> integ.setRandomNumberSeed(seed)
+> sim = app.Simulation(fx.topology, system, integ)
+> sim.context.setPositions(fx.positions)
+> log("platform: " + sim.context.getPlatform().getName())
+>
+> log("minimising 1...")
+> sim.minimizeEnergy(maxIterations=2000)
+> log("minimising 1 done")
+>
+> sim.context.setVelocitiesToTemperature(300*unit.kelvin, seed)
+> total = int(os.environ.get("MD_STEPS", 50000))
+> chunk = max(total // 10, 200); done = 0
+> while done < total:
+>     n = min(chunk, total - done)
+>     sim.step(n); done += n
+>     log(f"MD {done}/{total} steps")
+>
+> log("minimising 2...")
+> sim.minimizeEnergy(tolerance=1*unit.kilojoule_per_mole/unit.nanometer, maxIterations=5000)
+> log("minimising 2 done")
+>
+> mod = app.Modeller(fx.topology, sim.context.getState(getPositions=True).getPositions())
+> mod.delete([a for a in mod.topology.atoms() if a.element is not None and a.element.symbol == "H"])
+> tmp = "_tmp_out_%d.pdb" % seed
+> app.PDBFile.writeFile(mod.topology, mod.positions, open(tmp, "w"), keepIds=True)
+> with open(out, "w") as o:
+>     for l in open(tmp):
+>         if l.startswith(("TER", "CONECT", "ANISOU")): continue
+>         if l.startswith("ATOM"): l = l[:21] + "A" + l[22:]
+>         o.write(l)
+> log("wrote " + out)
+> EOF
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ export OPENMM_CPU_THREADS=$(nproc)
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ MD_STEPS=2000 nohup python prep_cb1.py 5TGZ_F238L.pdb test.pdb 1 > test.log 2>&1 &
+[1] 89
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -f test.log
+nohup: ignoring input
+[     0s] selected CB1 residues
+[     7s] PDBFixer done, atoms: 4718
+[    12s] platform: CPU
+[    12s] minimising 1...
+^C
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ pkill -9 -f prep_cb1.py
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cat > ~/cb1/diag.py <<'EOF'
+> import sys, time, os
+> from openmm import app, unit, LangevinMiddleIntegrator
+> from pdbfixer import PDBFixer
+> t0=time.time()
+> def log(m): print(f"[{time.time()-t0:6.1f}s] {m}", flush=True)
+>
+> keep=[]
+> for l in open("5TGZ_F238L.pdb"):
+>     if l.startswith("ATOM"):
+>         r=int(l[22:26])
+>         if 99<=r<=306: keep.append(l[:21]+"A"+l[22:])
+>         elif 332<=r<=414: keep.append(l[:21]+"B"+l[22:])
+> open("_diag.pdb","w").writelines(keep+["END\n"])
+> fx=PDBFixer("_diag.pdb")
+> fx.findMissingResidues(); fx.missingResidues={}
+> fx.findMissingAtoms(); fx.addMissingAtoms(); fx.addMissingHydrogens(7.4)
+> log(f"atoms {fx.topology.getNumAtoms()}")
+> ff=app.ForceField("amber14-all.xml","implicit/obc2.xml")
+> system=ff.createSystem(fx.topology,nonbondedMethod=app.NoCutoff,constraints=app.HBonds)
+> integ=LangevinMiddleIntegrator(300*unit.kelvin,1/unit.picosecond,0.002*unit.picoseconds)
+> sim=app.Simulation(fx.topology,system,integ)
+> sim.context.setPositions(fx.positions)
+> log("platform "+sim.context.getPlatform().getName())
+> e=sim.context.getState(getEnergy=True).getPotentialEnergy()
+> log(f"initial energy {e}")
+> for i in range(5):
+>     sim.minimizeEnergy(maxIterations=20)
+>     e=sim.context.getState(getEnergy=True).getPotentialEnergy()
+>     log(f"after {20*(i+1)} min iterations: {e}")
+> EOF
+[1]+  Killed                  MD_STEPS=2000 nohup python prep_cb1.py 5TGZ_F238L.pdb test.pdb 1 > test.log 2>&1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ OPENMM_CPU_THREADS=1 timeout 300 python diag.py
+[   2.3s] atoms 4718
+[   2.9s] platform CPU
+[   9.4s] initial energy 24160.862303073423 kJ/mol
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ for i in range(20):
+-bash: syntax error near unexpected token `('
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$     sim.minimizeEnergy(maxIterations=100)
+-bash: syntax error near unexpected token `maxIterations=100'
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$     log("min %d/2000 energy %s" % (100*(i+1), sim.context.getState(getEnergy=True).getPotentialEnergy()))
+-bash: syntax error near unexpected token `"min %d/2000 energy %s"'
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ nproc
+2
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ uptime
+ 21:41:52 up  3:02,  0 users,  load average: 0.00, 0.21, 0.66
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ ps aux --sort=-%cpu | head -8
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.0   3804  2744 ?        Sl   18:40   0:00 /init
+root           5  0.0  0.0   3804  2276 ?        Sl   18:40   0:00 plan9 --control-socket 6 --log-level 4 --server-fd 7 --pipe-fd 9 --log-truncate
+root           8  0.0  0.0   3808  1412 ?        Ss   18:40   0:00 /init
+root           9  0.0  0.0   3876  1480 ?        S    18:40   0:00 /init
+dyvaille      10  0.0  0.1  10444  5568 pts/0    Ss   18:40   0:01 -bash
+dyvaille     112  0.0  0.0  10628  3316 pts/0    R+   21:41   0:00 ps aux --sort=-%cpu
+dyvaille     113  0.0  0.0   7256  1952 pts/0    S+   21:41   0:00 head -8
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ pkill -9 python
+
+
+
+## 6. CB1 (separate)
+
+Prepare WT and F238L with the **same** protocol, and at least 3 more WT replicates (different repack
+seeds / minimisation settings). Then, in PowerShell:
+
+```powershell
+$env:CB1_TARGET = "237"            # PHE in the PDB numbering used by your file ("F238")
+$env:CB1_RANGES = "99-306,332-414" # 5TGZ; must match how the files were trimmed
+$env:CB1_REGION = "332-368"        # region of interest (e.g. TM6)
+$env:CB1_BFAC_PDB = "test\data\5TGZ.pdb"       # original experimental file, for γ (optional)
+julia test\nma\cb1_investigation.jl WT_min.pdb F238L_min.pdb rep1.pdb rep2.pdb rep3.pdb
+```
+Run it once with the default Cα model and once side-chain aware (`$env:CB1_SEL = "heavy"`, cutoff 7 Å,
+dense matrices: check memory). Results go to `test\nma\cb1_results`.
+
+How to read it: a Cα model with identical Cα coordinates cannot see the mutation (the script says so);
+the perturbation scan is independent of the mutant; no metric is called significant without ≥ 3
+replicates and |z| > 3.
+
+
+
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cat > ~/cb1/diag.py <<'EOF'
+> import sys, time, os
+> from openmm import app, unit, LangevinMiddleIntegrator
+> from pdbfixer import PDBFixer
+> t0=time.time()
+> def log(m): print(f"[{time.time()-t0:6.1f}s] {m}", flush=True)
+>
+> keep=[]
+> for l in open("5TGZ_F238L.pdb"):
+>     if l.startswith("ATOM"):
+>         r=int(l[22:26])
+>         if 99<=r<=306: keep.append(l[:21]+"A"+l[22:])
+>         elif 332<=r<=414: keep.append(l[:21]+"B"+l[22:])
+> open("_diag.pdb","w").writelines(keep+["END\n"])
+> fx=PDBFixer("_diag.pdb")
+> fx.findMissingResidues(); fx.missingResidues={}
+> fx.findMissingAtoms(); fx.addMissingAtoms(); fx.addMissingHydrogens(7.4)
+> log(f"atoms {fx.topology.getNumAtoms()}")
+> ff=app.ForceField("amber14-all.xml","implicit/obc2.xml")
+> system=ff.createSystem(fx.topology,nonbondedMethod=app.NoCutoff,constraints=app.HBonds)
+> integ=LangevinMiddleIntegrator(300*unit.kelvin,1/unit.picosecond,0.002*unit.picoseconds)
+> sim=app.Simulation(fx.topology,system,integ)
+> sim.context.setPositions(fx.positions)
+> log("platform "+sim.context.getPlatform().getName())
+> e=sim.context.getState(getEnergy=True).getPotentialEnergy()
+> log(f"initial energy {e}")
+> for i in range(5):
+>     sim.minimizeEnergy(maxIterations=20)
+>     e=sim.context.getState(getEnergy=True).getPotentialEnergy()
+>     log(f"after {20*(i+1)} min iterations: {e}")
+> EOF
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ OPENMM_CPU_THREADS=1 timeout 300 python diag.py
+[   2.2s] atoms 4718
+[   2.9s] platform CPU
+[   8.6s] initial energy 20261.921387191596 kJ/mol
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cat > ~/cb1/bench.py <<'EOF'
+> import time
+> from openmm import app, unit, Platform, LangevinMiddleIntegrator
+> from pdbfixer import PDBFixer
+> fx=PDBFixer("_diag.pdb")
+> fx.findMissingResidues(); fx.missingResidues={}
+> fx.findMissingAtoms(); fx.addMissingAtoms(); fx.addMissingHydrogens(7.4)
+> def bench(label, ffs, method, cutoff, threads):
+>     ff=app.ForceField(*ffs)
+>     kw=dict(nonbondedMethod=method, constraints=app.HBonds)
+>     if cutoff: kw["nonbondedCutoff"]=cutoff*unit.nanometer
+>     s=ff.createSystem(fx.topology, **kw)
+>     integ=LangevinMiddleIntegrator(300*unit.kelvin,1/unit.picosecond,0.002*unit.picoseconds)
+>     sim=app.Simulation(fx.topology,s,integ,Platform.getPlatformByName("CPU"),{"Threads":str(threads)})
+>     sim.context.setPositions(fx.positions)
+>     sim.context.getState(getForces=True)            # warm-up
+>     t=time.time()
+>     for _ in range(5): sim.context.getState(getForces=True)
+>     print(f"{label:34s} threads={threads}  {(time.time()-t)/5:.3f} s/eval", flush=True)
+> for th in (1,4):
+>     bench("OBC2 NoCutoff",            ["amber14-all.xml","implicit/obc2.xml"], app.NoCutoff, None, th)
+>     bench("OBC2 CutoffNonPeriodic 1.5nm",["amber14-all.xml","implicit/obc2.xml"], app.CutoffNonPeriodic, 1.5, th)
+>     bench("vacuum NoCutoff",          ["amber14-all.xml"], app.NoCutoff, None, th)
+> EOF
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1 && timeout 900 python bench.py
+OBC2 NoCutoff                      threads=1  5.536 s/eval
+OBC2 CutoffNonPeriodic 1.5nm       threads=1  0.976 s/eval
+vacuum NoCutoff                    threads=1  0.071 s/eval
+OBC2 NoCutoff                      threads=4  3.203 s/eval
+OBC2 CutoffNonPeriodic 1.5nm       threads=4  0.577 s/eval
+vacuum NoCutoff                    threads=4  0.041 s/eval
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$
+
+
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ kill -9 <PID>
+-bash: syntax error near unexpected token `newline'
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ pkill -9 python
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cat > ~/cb1/prep_cb1.py <<'EOF'
+> # usage: python prep_cb1.py in.pdb out.pdb seed     (env MD_STEPS, default 5000 = 10 ps)
+> import sys, os, time
+> import numpy as np
+> from openmm import app, unit, LangevinMiddleIntegrator, CustomExternalForce
+> from pdbfixer import PDBFixer
+>
+> inp, out, seed = sys.argv[1], sys.argv[2], int(sys.argv[3])
+> t0 = time.time()
+> def log(m): print(f"[{time.time()-t0:6.0f}s] {m}", flush=True)
+>
+> keep = []
+> for l in open(inp):
+>     if l.startswith("ATOM"):
+>         r = int(l[22:26])
+>         if 99 <= r <= 306:    keep.append(l[:21] + "A" + l[22:])
+>         elif 332 <= r <= 414: keep.append(l[:21] + "B" + l[22:])
+> tmp_in = "_tmp_in_%d.pdb" % seed
+> open(tmp_in, "w").writelines(keep + ["END\n"])
+>
+> fx = PDBFixer(tmp_in)
+> fx.findMissingResidues(); fx.missingResidues = {}
+> fx.findNonstandardResidues(); fx.replaceNonstandardResidues()
+> fx.findMissingAtoms(); fx.addMissingAtoms()
+> fx.addMissingHydrogens(7.4)
+> log("PDBFixer done, atoms: %d" % fx.topology.getNumAtoms())
+>
+> ff = app.ForceField("amber14-all.xml") if False else None
+> from openmm import app as _app
+> ff = _app.ForceField("amber14-all.xml")
+> system = ff.createSystem(fx.topology, nonbondedMethod=_app.NoCutoff, constraints=_app.HBonds)
+>
+> pos = np.array(fx.positions.value_in_unit(unit.nanometer))
+> ca237 = None
+> for a in fx.topology.atoms():
+>     if a.residue.chain.id == "A" and a.residue.id.strip() == "237" and a.name == "CA":
+>         ca237 = pos[a.index]
+> assert ca237 is not None, "CA of residue 237 not found"
+>
+> rest = CustomExternalForce("0.5*k*((x-x0)^2+(y-y0)^2+(z-z0)^2)")
+> for n in ("k", "x0", "y0", "z0"): rest.addPerParticleParameter(n)
+> nfree = 0
+> for a in fx.topology.atoms():
+>     if a.element is not None and a.element.symbol == "H": continue
+>     p = pos[a.index]
+>     if a.name in ("N", "CA", "C", "O"):
+>         k = 1000.0
+>     elif np.linalg.norm(p - ca237) < 1.0:
+>         nfree += 1; continue                 # free side-chain atom near residue 237
+>     else:
+>         k = 500.0
+>     rest.addParticle(a.index, [k, p[0], p[1], p[2]])
+> system.addForce(rest)
+> log("free side-chain heavy atoms near 237: %d" % nfree)
+>
+> integ = LangevinMiddleIntegrator(300*unit.kelvin, 1/unit.picosecond, 0.002*unit.picoseconds)
+> integ.setRandomNumberSeed(seed)
+> sim = _app.Simulation(fx.topology, system, integ)
+> sim.context.setPositions(fx.positions)
+> log("platform: " + sim.context.getPlatform().getName())
+>
+> for i in range(20):
+>     sim.minimizeEnergy(maxIterations=100)
+>     if i % 5 == 4:
+>         log("min %d/2000, E=%s" % (100*(i+1), sim.context.getState(getEnergy=True).getPotentialEnergy()))
+>
+> sim.context.setVelocitiesToTemperature(300*unit.kelvin, seed)
+> total = int(os.environ.get("MD_STEPS", 5000)); chunk = max(total // 10, 100); done = 0
+> while done < total:
+>     n = min(chunk, total - done); sim.step(n); done += n
+>     log("MD %d/%d" % (done, total))
+>
+> sim.minimizeEnergy(tolerance=1*unit.kilojoule_per_mole/unit.nanometer, maxIterations=3000)
+> log("final minimisation done")
+>
+> mod = _app.Modeller(fx.topology, sim.context.getState(getPositions=True).getPositions())
+> mod.delete([a for a in mod.topology.atoms() if a.element is not None and a.element.symbol == "H"])
+> tmp_out = "_tmp_out_%d.pdb" % seed
+> _app.PDBFile.writeFile(mod.topology, mod.positions, open(tmp_out, "w"), keepIds=True)
+> with open(out, "w") as o:
+>     for l in open(tmp_out):
+>         if l.startswith(("TER", "CONECT", "ANISOU")): continue
+>         if l.startswith("ATOM"): l = l[:21] + "A" + l[22:]
+>         o.write(l)
+> log("wrote " + out)
+> EOF
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ export OPENMM_CPU_THREADS=1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ MD_STEPS=200 python prep_cb1.py 5TGZ_F238L.pdb test.pdb 1
+[     4s] PDBFixer done, atoms: 4718
+[     5s] free side-chain heavy atoms near 237: 61
+[     5s] platform: CPU
+[   255s] min 500/2000, E=-20780.666489755717 kJ/mol
+[   367s] min 1000/2000, E=-21006.149406603814 kJ/mol
+[   399s] min 1500/2000, E=-21006.29402348678 kJ/mol
+[   445s] min 2000/2000, E=-21006.422706543126 kJ/mol
+[   456s] MD 100/200
+[   466s] MD 200/200
+[   578s] final minimisation done
+[   578s] wrote test.pdb
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$
+
+
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ export OPENMM_CPU_THREADS=1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ ( python prep_cb1.py 5TGZ.pdb WT_min.pdb 1 > WT.log 2>&1; \
+>   python prep_cb1.py 5TGZ.pdb WT_rep2.pdb 2 > rep2.log 2>&1; \
+>   python prep_cb1.py 5TGZ.pdb WT_rep4.pdb 4 > rep4.log 2>&1 ) > /dev/null 2>&1 &
+[1] 168
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ ( python prep_cb1.py 5TGZ_F238L.pdb F238L_min.pdb 1 > MUT.log 2>&1; \
+>   python prep_cb1.py 5TGZ.pdb WT_rep3.pdb 3 > rep3.log 2>&1 ) > /dev/null 2>&1 &
+[2] 171
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n 2 ~/cb1/*.log
+==> /home/dyvaille/cb1/MUT.log <==
+[     3s] free side-chain heavy atoms near 237: 61
+[     3s] platform: CPU
+
+==> /home/dyvaille/cb1/WT.log <==
+[     3s] free side-chain heavy atoms near 237: 64
+[     3s] platform: CPU
+
+==> /home/dyvaille/cb1/test.log <==
+[    12s] platform: CPU
+[    12s] minimising 1...
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n 2 ~/cb1/*.log
+==> /home/dyvaille/cb1/MUT.log <==
+[  1026s] final minimisation done
+[  1026s] wrote F238L_min.pdb
+
+==> /home/dyvaille/cb1/WT.log <==
+[  1035s] final minimisation done
+[  1035s] wrote WT_min.pdb
+
+==> /home/dyvaille/cb1/rep2.log <==
+[   793s] MD 4500/5000
+[   837s] MD 5000/5000
+
+==> /home/dyvaille/cb1/rep3.log <==
+[   840s] MD 4500/5000
+[   912s] MD 5000/5000
+
+==> /home/dyvaille/cb1/test.log <==
+[    12s] platform: CPU
+[    12s] minimising 1...
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n 2 ~/cb1/*.log
+==> /home/dyvaille/cb1/MUT.log <==
+[  1026s] final minimisation done
+[  1026s] wrote F238L_min.pdb
+
+==> /home/dyvaille/cb1/WT.log <==
+[  1035s] final minimisation done
+[  1035s] wrote WT_min.pdb
+
+==> /home/dyvaille/cb1/rep2.log <==
+[ 27480s] final minimisation done
+[ 27480s] wrote WT_rep2.pdb
+
+==> /home/dyvaille/cb1/rep3.log <==
+[ 27528s] final minimisation done
+[ 27529s] wrote WT_rep3.pdb
+
+==> /home/dyvaille/cb1/rep4.log <==
+[   400s] min 1500/2000, E=-21082.846631781456 kJ/mol
+[   431s] min 2000/2000, E=-21082.92565850977 kJ/mol
+
+==> /home/dyvaille/cb1/test.log <==
+[    12s] platform: CPU
+[    12s] minimising 1...
+[2]+  Done                    ( python prep_cb1.py 5TGZ_F238L.pdb F238L_min.pdb 1 > MUT.log 2>&1; python prep_cb1.py 5TGZ.pdb WT_rep3.pdb 3 > rep3.log 2>&1 ) > /dev/null 2>&1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n 2 ~/cb1/*.log
+==> /home/dyvaille/cb1/MUT.log <==
+[  1026s] final minimisation done
+[  1026s] wrote F238L_min.pdb
+
+==> /home/dyvaille/cb1/WT.log <==
+[  1035s] final minimisation done
+[  1035s] wrote WT_min.pdb
+
+==> /home/dyvaille/cb1/rep2.log <==
+[ 27480s] final minimisation done
+[ 27480s] wrote WT_rep2.pdb
+
+==> /home/dyvaille/cb1/rep3.log <==
+[ 27528s] final minimisation done
+[ 27529s] wrote WT_rep3.pdb
+
+==> /home/dyvaille/cb1/rep4.log <==
+[   964s] final minimisation done
+[   964s] wrote WT_rep4.pdb
+
+==> /home/dyvaille/cb1/test.log <==
+[    12s] platform: CPU
+[    12s] minimising 1...
+[1]+  Done                    ( python prep_cb1.py 5TGZ.pdb WT_min.pdb 1 > WT.log 2>&1; python prep_cb1.py 5TGZ.pdb WT_rep2.pdb 2 > rep2.log 2>&1; python prep_cb1.py 5TGZ.pdb WT_rep4.pdb 4 > rep4.log 2>&1 ) > /dev/null 2>&1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ ls
+5TGZ.pdb        F238L_min.pdb  WT.log      WT_rep2.pdb  WT_rep4.pdb  _tmp_in_1.pdb  _tmp_in_3.pdb  _tmp_out_1.pdb  _tmp_out_3.pdb  bench.py  mutate.py    rep2.log  rep4.log  test.pdb
+5TGZ_F238L.pdb  MUT.log        WT_min.pdb  WT_rep3.pdb  _diag.pdb    _tmp_in_2.pdb  _tmp_in_4.pdb  _tmp_out_2.pdb  _tmp_out_4.pdb  diag.py   prep_cb1.py  rep3.log  test.log
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ grep " 237 " F238L_min.pdb | awk '{print $4}' | sort | uniq -c      # expect LEU, 8 lines
+      8 LEU
+      1 THR
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ grep " 237 " WT_min.pdb    | awk '{print $4}' | sort | uniq -c      # expect PHE, 11 lines
+     11 PHE
+      1 THR
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cp WT_min.pdb F238L_min.pdb WT_rep2.pdb WT_rep3.pdb WT_rep4.pdb \
+>   "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final/"
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$
+
+NOW THAT THE REPLICATES ARE DONE; WE ARE OVER IN UBUNTU WSL (WINDOWS SUBSYSTEM FOR LINUX) 
+
+WE WILL THEREFORE CONTINUE IN VS CODE POWERSHELL 8(TERMINAL) FROM THE ROOT PROJECT
+
+
+## 6. CB1 (separate)
+
+Prepare WT and F238L with the **same** protocol, and at least 3 more WT replicates (different repack
+seeds / minimisation settings). Then, in PowerShell:
+
+```powershell
+$env:CB1_TARGET = "237"            # PHE in the PDB numbering used by your file ("F238")
+$env:CB1_RANGES = "99-306,332-414" # 5TGZ; must match how the files were trimmed
+$env:CB1_REGION = "332-368"        # region of interest (e.g. TM6)
+$env:CB1_BFAC_PDB = "test\data\5TGZ.pdb"       # original experimental file, for γ (optional)
+julia test\nma\cb1_investigation.jl WT_min.pdb F238L_min.pdb rep1.pdb rep2.pdb rep3.pdb
+```
+Run it once with the default Cα model and once side-chain aware (`$env:CB1_SEL = "heavy"`, cutoff 7 Å,
+dense matrices: check memory). Results go to `test\nma\cb1_results`.
+
+How to read it: a Cα model with identical Cα coordinates cannot see the mutation (the script says so);
+the perturbation scan is independent of the mutant; no metric is called significant without ≥ 3
+replicates and |z| > 3.
+
+
+
+
+PS <PROJECT_ROOT>> 
+PS <PROJECT_ROOT>> cd "<PROJECT_ROOT>"
+PS <PROJECT_ROOT>> $env:CB1_TARGET="237"; $env:CB1_RANGES="99-306,332-414"; $env:CB1_REGION="332-368"
+PS <PROJECT_ROOT>> $env:CB1_BFAC_PDB="test\data\5TGZ.pdb"; $env:CB1_SEL="heavy"
+PS <PROJECT_ROOT>> julia --project=. test\nma_best_final\cb1_investigation.jl `
+>>   test\nma_best_final\WT_min.pdb test\nma_best_final\F238L_min.pdb `
+>>   test\nma_best_final\WT_rep2.pdb test\nma_best_final\WT_rep3.pdb test\nma_best_final\WT_rep4.pdb
+
+=== CB1 investigation ===
+  model       : distance-weighted (k = γ/r²), selection heavy, cutoff 7.0 Å
+  target      : residue 237   region of interest: 332–368   masses: none
+┌ Warning: heavy-atom model with 2305 atoms needs several GB of memory; consider CB1_SEL=ca or a smaller region
+└ @ Main <PROJECT_ROOT>\test\nma_best_final\cb1_investigation.jl:197
+  residues around the target in WT:
+    233:ALA  234:VAL  235:VAL  236:ALA  237:PHE  238:CYS  239:LEU  240:MET  241:TRP
+  solving WT and mutant ... done
+
+Pre-flight checks
+| item                        | WT     | mutant |
+|-----------------------------|--------|--------|
+| atoms in the model          | 2305   | 2302   |
+| residues                    | 289    | 289    |
+| residue at target 237       | PHE    | LEU    |
+| expected at target          | PHE    | LEU    |
+| zero modes (expect 6)       | 6      | 6      |
+| softest non-zero eigenvalue | 0.0016 | 0.0016 |
+
+=== WT vs mutant on 2302 common atoms ===
+
+WT vs mutant against the replicate noise floor (3 replicate(s))
+| metric                                 | WT vs mutant | replicate mean | replicate sd | z        | verdict             |
+|----------------------------------------|--------------|----------------|--------------|----------|---------------------|
+| relative ΔMSF, region mean             | 0.0041       | -3.332e-04     | 0.0025       | 1.7463   | within noise floor  |
+| relative ΔMSF, target residue          | 0.1499       | -0.0192        | 0.0013       | 127.2305 | outside noise floor |
+| max abs(relative ΔMSF)                 | 0.9997       | 0.8194         | 0.3023       | 0.5964   | within noise floor  |
+| 1 − RMSIP (low-mode subspace)          | 0.0264       | 0.0355         | 0.0158       | -0.5793  | within noise floor  |
+| mean abs(log λ ratio) (spectrum shift) | nan          | nan            | nan          | nan      | n/a                 |
+| ΔDCCM, Frobenius / N                   | nan          | nan            | nan          | nan      | n/a                 |
+| ΔDCCM, target × region mean            | nan          | nan            | nan          | nan      | n/a                 |
+
+Cutoff sensitivity of the WT-vs-mutant result
+| cutoff (Å) | zero modes WT | zero modes mutant | ΔMSF region (rel.) | ΔMSF target (rel.) | max abs(ΔMSF) (rel.) | RMSIP  |
+|------------|---------------|-------------------|--------------------|--------------------|----------------------|--------|
+| 6          | 6             | 6                 | 0.0052             | 0.2139             | 1.6103               | 0.9728 |
+| 7          | 6             | 6                 | 0.0041             | 0.1499             | 0.9997               | 0.9736 |
+| 8          | 6             | 6                 | 0.0044             | 0.1076             | 0.8094               | 0.9738 |
+| 10         | 6             | 6                 | 0.0025             | 0.0831             | 0.4123               | 0.9740 |
+
+=== Stiffness-perturbation scan (all springs of one residue scaled by 0.5) ===
+┌ Warning: Assignment to `tprofile` in soft scope is ambiguous because a global variable by the same name exists: `tprofile` will be treated as a new local. Disambiguate by using `local tprofile` to suppress this warning or `global tprofile` to assign to the existing global variable.
+└ @ <PROJECT_ROOT>\test\nma_best_final\cb1_investigation.jl:320
+  275/289
+Residues outside the region whose stiffness most affects the region's fluctuations
+| rank | residue | name | mean abs(Δ MSF) in region (rel.) | own Δ MSF (rel.) |
+|------|---------|------|----------------------------------|------------------|
+| 1    | 400     | ARG  | 0.0110                           | 0.7554           |
+| 2    | 294     | TYR  | 0.0087                           | 0.7754           |
+| 3    | 200     | PHE  | 0.0086                           | 0.8066           |
+| 4    | 214     | ARG  | 0.0084                           | 0.7553           |
+| 5    | 375     | ILE  | 0.0074                           | 0.6483           |
+| 6    | 280     | ILE  | 0.0073                           | 0.7519           |
+| 7    | 396     | ILE  | 0.0068                           | 0.7570           |
+| 8    | 389     | ASN  | 0.0060                           | 0.7646           |
+| 9    | 386     | CYS  | 0.0051                           | 0.7521           |
+| 10   | 298     | LEU  | 0.0051                           | 0.6953           |
+
+Target residue 237 in the perturbation ranking
+| quantity                                               | value     |
+|--------------------------------------------------------|-----------|
+| mean abs(Δ MSF) in region when residue 237 is softened | 6.211e-04 |
+| percentile among all scanned residues                  | 50.8651   |
+| percentile among scanned residues outside the region   | 58.3333   |
+| residues scanned                                       | 289       |
+
+(B-factor calibration is only implemented for CB1_SEL=ca)
+
+written to <PROJECT_ROOT>\test\nma_best_final\cb1_results:
+  cb1_summary.md, cb1_noise_floor.tsv, cb1_cutoff_sensitivity.tsv, cb1_perturbation_*.tsv,
+  cb1_dmsf_wt_vs_mut.tsv
+
+==================================================================
+READ-OUT
+==================================================================
+• metrics outside the noise floor: relative ΔMSF, target residue
+• the stiffness-perturbation scan is independent of the mutant structure: it shows how strongly residue 237's environment couples to the region (percentile 58 among residues outside the region).
+• limits: harmonic, single-conformation, vacuum model; WT and mutant must come from the same protocol; Cα models need changed coordinates, heavy-atom models need the cutoff checked.
+
+
+
+MORE REPLICATES OF MUTANTS AND WILD TYPES PRODUCED VIA UBUNTU
+
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ grep -h "MD 5000/5000" ~/cb1/WT.log ~/cb1/MUT.log ~/cb1/rep*.log | wc -l   # expect 5
+5
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$    cd ~/cb1; export OPENMM_CPU_THREADS=1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$    for s in 5 6 7; do nohup python prep_cb1.py 5TGZ.pdb WT_rep$s.pdb $s > rep$s.log 2>&1 & done
+[1] 400
+[2] 401
+[3] 402
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n1 ~/cb1/rep5.log ~/cb1/rep6.log ~/cb1/rep7.log
+==> /home/dyvaille/cb1/rep5.log <==
+[ 17028s] wrote WT_rep5.pdb
+
+==> /home/dyvaille/cb1/rep6.log <==
+[ 17099s] wrote WT_rep6.pdb
+
+==> /home/dyvaille/cb1/rep7.log <==
+[ 17074s] wrote WT_rep7.pdb
+[1]   Done                    nohup python prep_cb1.py 5TGZ.pdb WT_rep$s.pdb $s > rep$s.log 2>&1
+[2]-  Done                    nohup python prep_cb1.py 5TGZ.pdb WT_rep$s.pdb $s > rep$s.log 2>&1
+[3]+  Done                    nohup python prep_cb1.py 5TGZ.pdb WT_rep$s.pdb $s > rep$s.log 2>&1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cd ~/cb1; export OPENMM_CPU_THREADS=1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ for s in 2 3; do nohup python prep_cb1.py 5TGZ_F238L.pdb MUT_rep$s.pdb $s > mrep$s.log 2>&1 & done
+[1] 472
+[2] 473
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n 2 ~/cb1/*.log
+==> /home/dyvaille/cb1/MUT.log <==
+[  1026s] final minimisation done
+[  1026s] wrote F238L_min.pdb
+
+==> /home/dyvaille/cb1/WT.log <==
+[  1035s] final minimisation done
+[  1035s] wrote WT_min.pdb
+
+==> /home/dyvaille/cb1/mrep2.log <==
+[  1408s] final minimisation done
+[  1409s] wrote MUT_rep2.pdb
+
+==> /home/dyvaille/cb1/mrep3.log <==
+[  1399s] final minimisation done
+[  1399s] wrote MUT_rep3.pdb
+
+==> /home/dyvaille/cb1/rep2.log <==
+[ 27480s] final minimisation done
+[ 27480s] wrote WT_rep2.pdb
+
+==> /home/dyvaille/cb1/rep3.log <==
+[ 27528s] final minimisation done
+[ 27529s] wrote WT_rep3.pdb
+
+==> /home/dyvaille/cb1/rep4.log <==
+[   964s] final minimisation done
+[   964s] wrote WT_rep4.pdb
+
+==> /home/dyvaille/cb1/rep5.log <==
+[ 17027s] final minimisation done
+[ 17028s] wrote WT_rep5.pdb
+
+==> /home/dyvaille/cb1/rep6.log <==
+[ 17099s] final minimisation done
+[ 17099s] wrote WT_rep6.pdb
+
+==> /home/dyvaille/cb1/rep7.log <==
+[ 17074s] final minimisation done
+[ 17074s] wrote WT_rep7.pdb
+
+==> /home/dyvaille/cb1/test.log <==
+[    12s] platform: CPU
+[    12s] minimising 1...
+[1]-  Done                    nohup python prep_cb1.py 5TGZ_F238L.pdb MUT_rep$s.pdb $s > mrep$s.log 2>&1
+[2]+  Done                    nohup python prep_cb1.py 5TGZ_F238L.pdb MUT_rep$s.pdb $s > mrep$s.log 2>&1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ for s in 4 5; do nohup python prep_cb1.py 5TGZ_F238L.pdb MUT_rep$s.pdb $s > mrep$s.log 2>&1 & done
+[1] 499
+[2] 500
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ tail -n 2 ~/cb1/*.log
+==> /home/dyvaille/cb1/MUT.log <==
+[  1026s] final minimisation done
+[  1026s] wrote F238L_min.pdb
+
+==> /home/dyvaille/cb1/WT.log <==
+[  1035s] final minimisation done
+[  1035s] wrote WT_min.pdb
+
+==> /home/dyvaille/cb1/mrep2.log <==
+[  1408s] final minimisation done
+[  1409s] wrote MUT_rep2.pdb
+
+==> /home/dyvaille/cb1/mrep3.log <==
+[  1399s] final minimisation done
+[  1399s] wrote MUT_rep3.pdb
+
+==> /home/dyvaille/cb1/mrep4.log <==
+[  1167s] final minimisation done
+[  1168s] wrote MUT_rep4.pdb
+
+==> /home/dyvaille/cb1/mrep5.log <==
+[  1133s] final minimisation done
+[  1134s] wrote MUT_rep5.pdb
+
+==> /home/dyvaille/cb1/rep2.log <==
+[ 27480s] final minimisation done
+[ 27480s] wrote WT_rep2.pdb
+
+==> /home/dyvaille/cb1/rep3.log <==
+[ 27528s] final minimisation done
+[ 27529s] wrote WT_rep3.pdb
+
+==> /home/dyvaille/cb1/rep4.log <==
+[   964s] final minimisation done
+[   964s] wrote WT_rep4.pdb
+
+==> /home/dyvaille/cb1/rep5.log <==
+[ 17027s] final minimisation done
+[ 17028s] wrote WT_rep5.pdb
+
+==> /home/dyvaille/cb1/rep6.log <==
+[ 17099s] final minimisation done
+[ 17099s] wrote WT_rep6.pdb
+
+==> /home/dyvaille/cb1/rep7.log <==
+[ 17074s] final minimisation done
+[ 17074s] wrote WT_rep7.pdb
+
+==> /home/dyvaille/cb1/test.log <==
+[    12s] platform: CPU
+[    12s] minimising 1...
+[1]-  Done                    nohup python prep_cb1.py 5TGZ_F238L.pdb MUT_rep$s.pdb $s > mrep$s.log 2>&1
+[2]+  Done                    nohup python prep_cb1.py 5TGZ_F238L.pdb MUT_rep$s.pdb $s > mrep$s.log 2>&1
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cp MUT_rep2.pdb MUT_rep3.pdb MUT_rep4 MUT_rep5.pdb WT_rep5.pdb WT_rep6.pdb WT_rep7.pdb \ "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final/"
+cp: target ' /mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final/' is not a directory
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cp MUT_rep2.pdb MUT_rep3.pdb MUT_rep4 MUT_rep5.pdb WT_rep5.pdb WT_rep6.pdb WT_rep7.pdb \ "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final/"
+cp: target ' /mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final/' is not a directory
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$ cp MUT_rep2.pdb MUT_rep3.pdb MUT_rep4.pdb MUT_rep5.pdb WT_rep5.pdb WT_rep6.pdb WT_rep7.pdb \
+> "/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final/"
+(prody311) dyvaille@DESKTOP-TUALF24:~/cb1$
+
+
+PS <PROJECT_ROOT>> julia --project=. test\nma_best_final\cb1_investigation.jl `
+>>   test\nma_best_final\WT_min.pdb test\nma_best_final\F238L_min.pdb `
+>>   test\nma_best_final\WT_rep2.pdb test\nma_best_final\WT_rep3.pdb test\nma_best_final\WT_rep4.pdb `
+>>   test\nma_best_final\WT_rep5.pdb test\nma_best_final\WT_rep6.pdb test\nma_best_final\WT_rep7.pdb `
+>>   --mut test\nma_best_final\MUT_rep2.pdb test\nma_best_final\MUT_rep3.pdb `
+>>         test\nma_best_final\MUT_rep4.pdb test\nma_best_final\MUT_rep5.pdb
+
+=== CB1 investigation ===
+  model       : distance-weighted (k = γ/r²), selection heavy, cutoff 7.0 Å
+  target      : residue 237   region of interest: 332–368   masses: none
+┌ Warning: heavy-atom model with 2305 atoms needs several GB of memory; consider CB1_SEL=ca or a smaller region
+└ @ Main <PROJECT_ROOT>\test\nma_best_final\cb1_investigation.jl:232
+  residues around the target in WT:
+    233:ALA  234:VAL  235:VAL  236:ALA  237:PHE  238:CYS  239:LEU  240:MET  241:TRP
+  solving WT and mutant ... done
+
+Pre-flight checks
+| item                        | WT     | mutant |
+|-----------------------------|--------|--------|
+| atoms in the model          | 2305   | 2302   |
+| residues                    | 289    | 289    |
+| residue at target 237       | PHE    | LEU    |
+| expected at target          | PHE    | LEU    |
+| zero modes (expect 6)       | 6      | 6      |
+| softest non-zero eigenvalue | 0.0016 | 0.0016 |
+
+=== WT vs mutant on 2302 common atoms ===
+
+WT vs mutant against the replicate noise floor (6 replicate(s))
+| metric                                 | WT vs mutant | replicate mean | replicate sd | z       | verdict             |
+|----------------------------------------|--------------|----------------|--------------|---------|---------------------|
+| relative ΔMSF, region mean             | 0.0041       | 5.640e-04      | 0.0023       | 1.5454  | within noise floor  |
+| relative ΔMSF, target residue          | 0.1499       | -0.0195        | 0.0018       | 94.7776 | outside noise floor |
+| max abs(relative ΔMSF)                 | 0.9997       | 0.7432         | 0.3199       | 0.8018  | within noise floor  |
+| 1 − RMSIP (low-mode subspace)          | 0.0264       | 0.0315         | 0.0109       | -0.4691 | within noise floor  |
+| mean abs(log λ ratio) (spectrum shift) | 0.0416       | 0.0344         | 0.0115       | 0.6267  | within noise floor  |
+| ΔDCCM, Frobenius / N                   | 0.0019       | 0.0019         | 5.090e-04    | 0.0215  | within noise floor  |
+| ΔDCCM, target × region mean            | -1.176e-04   | 4.618e-04      | 1.063e-04    | -5.4500 | outside noise floor |
+
+Two-sample comparison: 6 WT replicates vs 5 mutant structures (each compared with WT)
+| metric                                 | WT-rep mean | WT-rep sd | mutant mean | mutant sd | Δ mean     | p (permutation) | p floor | Holm p | verdict                       ||----------------------------------------|-------------|-----------|-------------|-----------|------------|-----------------|---------|--------|-------------------------------|| relative ΔMSF, region mean             | 5.640e-04   | 0.0023    | 0.0031      | 0.0018    | 0.0026     | 0.0671          | 0.0043  | 0.3355 | no detectable difference      || relative ΔMSF, target residue          | -0.0195     | 0.0018    | 0.1397      | 0.0101    | 0.1591     | 0.0022          | 0.0043  | 0.0152 | differs from replicate spread || max abs(relative ΔMSF)                 | 0.7432      | 0.3199    | 0.9142      | 0.4804    | 0.1709     | 0.2554          | 0.0022  | 0.7662 | no detectable difference      || 1 − RMSIP (low-mode subspace)          | 0.0315      | 0.0109    | 0.0322      | 0.0129    | 6.673e-04  | 0.5541          | 0.0022  | 0.7662 | no detectable difference      || mean abs(log λ ratio) (spectrum shift) | 0.0344      | 0.0115    | 0.0376      | 0.0112    | 0.0032     | 0.3268          | 0.0022  | 0.7662 | no detectable difference      || ΔDCCM, Frobenius / N                   | 0.0019      | 5.090e-04 | 0.0027      | 0.0012    | 7.540e-04  | 0.1126          | 0.0022  | 0.4502 | no detectable difference      || ΔDCCM, target × region mean            | 4.618e-04   | 1.063e-04 | 5.886e-05   | 1.581e-04 | -4.029e-04 | 0.0022          | 0.0043  | 0.0152 | differs from replicate spread |  mutant group = the mutant file + 4 mutant replicate(s); signed metrics two-sided, magnitude metrics one-sided (mutant larger).
+  'p floor' is the smallest p the design can give; 'underpowered' means more structures are needed.
+
+Cutoff sensitivity of the WT-vs-mutant result
+| cutoff (Å) | zero modes WT | zero modes mutant | ΔMSF region (rel.) | ΔMSF target (rel.) | max abs(ΔMSF) (rel.) | RMSIP  |
+|------------|---------------|-------------------|--------------------|--------------------|----------------------|--------|
+| 6          | 6             | 6                 | 0.0052             | 0.2139             | 1.6103               | 0.9728 |
+| 7          | 6             | 6                 | 0.0041             | 0.1499             | 0.9997               | 0.9736 |
+| 8          | 6             | 6                 | 0.0044             | 0.1076             | 0.8094               | 0.9738 |
+| 10         | 6             | 6                 | 0.0025             | 0.0831             | 0.4123               | 0.9740 |
+
+=== Stiffness-perturbation scan: SKIPPED (CB1_SKIP_SCAN=1); no perturbation files are written ===
+
+(B-factor calibration is only implemented for CB1_SEL=ca)
+
+written to <PROJECT_ROOT>\test\nma_best_final\cb1_final:
+  cb1_summary.md, cb1_noise_floor.tsv, cb1_cutoff_sensitivity.tsv, cb1_dmsf_wt_vs_mut.tsv, cb1_two_sample.tsv
+
+==================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PS <PROJECT_ROOT>> $env:CB1_OUT="cb1_F238L_rotA_t"; $env:CB1_SKIP_SCAN="1"
+>> julia --project=. test\nma_best_final\cb1_investigation.jl `
+>>   test\nma_best_final\WT_min.pdb test\nma_best_final\F238L_rotA_min.pdb `
+>>   test\nma_best_final\WT_rep2.pdb test\nma_best_final\WT_rep3.pdb test\nma_best_final\WT_rep4.pdb `
+>>   test\nma_best_final\WT_rep5.pdb test\nma_best_final\WT_rep6.pdb test\nma_best_final\WT_rep7.pdb
+
+=== CB1 investigation ===
+  model       : distance-weighted (k = γ/r²), selection heavy, cutoff 7.0 Å
+  target      : residue 237   region of interest: 332–368   masses: none
+┌ Warning: heavy-atom model with 2305 atoms needs several GB of memory; consider CB1_SEL=ca or a smaller region
+└ @ Main <PROJECT_ROOT>\test\nma_best_final\cb1_investigation.jl:232
+  residues around the target in WT:
+    233:ALA  234:VAL  235:VAL  236:ALA  237:PHE  238:CYS  239:LEU  240:MET  241:TRP
+  solving WT and mutant ... done
+
+Pre-flight checks
+| item                        | WT     | mutant |
+|-----------------------------|--------|--------|
+| atoms in the model          | 2305   | 2302   |
+| residues                    | 289    | 289    |
+| residue at target 237       | PHE    | LEU    |
+| expected at target          | PHE    | LEU    |
+| zero modes (expect 6)       | 6      | 6      |
+| softest non-zero eigenvalue | 0.0016 | 0.0016 |
+
+=== WT vs mutant on 2302 common atoms ===
+
+WT vs mutant against the replicate noise floor (6 replicate(s))
+| metric                                 | WT vs mutant | replicate mean | replicate sd | z        | verdict             |
+|----------------------------------------|--------------|----------------|--------------|----------|---------------------|
+| relative ΔMSF, region mean             | -2.750e-04   | 5.640e-04      | 0.0023       | -0.3666  | within noise floor  |
+| relative ΔMSF, target residue          | 0.1963       | -0.0195        | 0.0018       | 120.7155 | outside noise floor |
+| max abs(relative ΔMSF)                 | 0.4963       | 0.7432         | 0.3199       | -0.7720  | within noise floor  |
+| 1 − RMSIP (low-mode subspace)          | 0.0282       | 0.0315         | 0.0109       | -0.3006  | within noise floor  |
+| mean abs(log λ ratio) (spectrum shift) | 0.0348       | 0.0344         | 0.0115       | 0.0351   | within noise floor  |
+| ΔDCCM, Frobenius / N                   | 0.0031       | 0.0019         | 5.090e-04    | 2.3688   | within noise floor  |
+| ΔDCCM, target × region mean            | 1.291e-04    | 4.618e-04      | 1.063e-04    | -3.1293  | outside noise floor |
+
+Cutoff sensitivity of the WT-vs-mutant result
+| cutoff (Å) | zero modes WT | zero modes mutant | ΔMSF region (rel.) | ΔMSF target (rel.) | max abs(ΔMSF) (rel.) | RMSIP  |
+|------------|---------------|-------------------|--------------------|--------------------|----------------------|--------|
+| 6          | 6             | 6                 | 0.0098             | 0.3097             | 0.4992               | 0.9695 |
+| 7          | 6             | 6                 | -2.750e-04         | 0.1963             | 0.4963               | 0.9718 |
+| 8          | 6             | 6                 | 0.0020             | 0.1876             | 0.3931               | 0.9725 |
+
+=== Stiffness-perturbation scan: SKIPPED (CB1_SKIP_SCAN=1); no perturbation files are written ===
+
+(B-factor calibration is only implemented for CB1_SEL=ca)
+
+written to <PROJECT_ROOT>\test\nma_best_final\cb1_F238L_rotA_t:
+  cb1_summary.md, cb1_noise_floor.tsv, cb1_cutoff_sensitivity.tsv, cb1_dmsf_wt_vs_mut.tsv
+
+==================================================================
+READ-OUT
+• metrics outside the noise floor: relative ΔMSF, target residue; ΔDCCM, target × region mean
+• the stiffness-perturbation scan was skipped in this run.
+• limits: harmonic, single-conformation, vacuum model; WT and mutant must come from the same protocol; Cα models need changed coordinates, heavy-atom models need the cutoff checked.
+PS <PROJECT_ROOT>> 
+
+
+
+
+
+
+
+2. Lysozyme modes through VMD’s Normal Mode Wizard (optional, with arrows)
+
+cd "C:/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final"
+mol new 1aki_mode_7.pdb type pdb waitfor all
+mol delrep 0 top
+mol representation Trace 0.4 12
+mol color Index
+mol addrep top
+animate style Rock
+animate speed 0.9
+animate forward
+color Display Background white
+
+It is a Cα-only file, so use Trace or small spheres, not cartoon. Save an image with File → Render, choosing “Snapshot” if the Tachyon option complains. For a movie, use Extensions → Visualization → Movie Maker
+
+bash
+python modes_to_nmd.py 1aki.pdb 1aki_anm.nmd 10     # Ubuntu, prody311 environment
+
+In VMD, open Extensions → Analysis → Normal Mode Wizard and load 1aki_anm.nmd. This uses ProDy’s constant-spring 15 Å ANM, the same model your Julia code reproduced to about 1e-13,
+ which you can state to justify using ProDy for the visualisation.
+
+
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ conda install --force-reinstall -c conda-forge scipy=1.15.3
+Collecting package metadata (current_repodata.json): - WARNING conda.models.version:get_matcher(546): Using .* with relational operator is superfluous and deprecated and will be removed in a future version of conda. Your spec was 1.7.1.*, but conda is ignoring the .* and treating it as 1.7.1
+done
+Solving environment: done
+
+
+==> WARNING: A newer version of conda exists. <==
+  current version: 23.3.1
+  latest version: 26.9.4
+
+Please update conda by running
+
+    $ conda update -n base -c defaults conda
+
+Or to minimize the number of packages updated during conda update use
+
+     conda install conda=26.9.4
+
+
+
+## Package Plan ##
+
+  environment location: /home/dyvaille/anaconda3/envs/prody311
+
+  added / updated specs:
+    - scipy=1.15.3
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    blas-2.312                 |         openblas          18 KB  conda-forge
+    blas-devel-3.11.0          |12_h1ea3ea9_openblas          18 KB  conda-forge
+    libblas-3.11.0             |12_h4a7cf45_openblas          18 KB  conda-forge
+    libcblas-3.11.0            |12_h0358290_openblas          18 KB  conda-forge
+    liblapack-3.11.0           |12_h47877c9_openblas          18 KB  conda-forge
+    liblapacke-3.11.0          |12_h6ae95b6_openblas          18 KB  conda-forge
+    openblas-0.3.34            |pthreads_h6ec200e_0         5.7 MB  conda-forge
+    scipy-1.15.3               |  py311h35deafb_2        24.2 MB
+    ------------------------------------------------------------
+                                           Total:        30.0 MB
+
+The following NEW packages will be INSTALLED:
+
+  blas               conda-forge/linux-64::blas-2.312-openblas
+  blas-devel         conda-forge/linux-64::blas-devel-3.11.0-12_h1ea3ea9_openblas
+  liblapacke         conda-forge/linux-64::liblapacke-3.11.0-12_h6ae95b6_openblas
+  openblas           conda-forge/linux-64::openblas-0.3.34-pthreads_h6ec200e_0
+
+The following packages will be UPDATED:
+
+  ca-certificates    pkgs/main::ca-certificates-2026.10.20~ --> conda-forge::ca-certificates-2026.10.23-hbd8a1cb_0
+  libblas                       3.11.0-11_h4a7cf45_openblas --> 3.11.0-12_h4a7cf45_openblas
+  libcblas                      3.11.0-11_h0358290_openblas --> 3.11.0-12_h0358290_openblas
+  liblapack                     3.11.0-11_h47877c9_openblas --> 3.11.0-12_h47877c9_openblas
+  openssl               pkgs/main::openssl-3.5.9-h1b28b03_0 --> conda-forge::openssl-3.6.5-h781a0a9_0
+
+The following packages will be SUPERSEDED by a higher-priority channel:
+
+  scipy              conda-forge::scipy-1.17.1-py311hbe70e~ --> pkgs/main::scipy-1.15.3-py311h35deafb_2
+
+
+Proceed ([y]/n)? y
+
+
+Downloading and Extracting Packages
+
+Preparing transaction: done
+Verifying transaction: done
+Executing transaction: done
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -c "from scipy.spatial.transform import Rotation; print('SciPy import OK')"
+
+SciPy import OK
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python -c "from prody import parsePDB, ANM, writeNMD; print('ProDy import OK')"
+
+ProDy import OK
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python modes_to_nmd.py 1aki.pdb 1aki_anm.nmd 10     # Ubuntu, prody311 environment
+wrote 1aki_anm.nmd with 10 modes for 129 Calpha atoms
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$
+
+
+4. CB1: colour the structure by the mutation’s ΔMSF
+
+bash
+python dmsf_to_pdb.py WT_min.pdb cb1_final/cb1_dmsf_wt_vs_mut.tsv WT_dmsf.pdb
+
+(prody311) dyvaille@DESKTOP-TUALF24:/mnt/c/Users/Djoufack Fouetsop/Downloads/Master Thesis/WritingThesis/Project master/BiochemicalAlgorithms.jl/test/nma_best_final$ python dmsf_to_pdb.py WT_min.pdb cb1_final/cb1_dmsf_wt_vs_mut.tsv WT_dmsf.pdb
+residues with dMSF: 289, atoms written: 2305, atoms without a value (set to 0): 0

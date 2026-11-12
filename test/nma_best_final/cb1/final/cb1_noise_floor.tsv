@@ -1,0 +1,8 @@
+metric	WT vs mutant	replicate mean	replicate sd	z	verdict
+relative ΔMSF, region mean	0.0041	5.640e-04	0.0023	1.5454	within noise floor
+relative ΔMSF, target residue	0.1499	-0.0195	0.0018	94.7776	outside noise floor
+max abs(relative ΔMSF)	0.9997	0.7432	0.3199	0.8018	within noise floor
+1 − RMSIP (low-mode subspace)	0.0264	0.0315	0.0109	-0.4691	within noise floor
+mean abs(log λ ratio) (spectrum shift)	0.0416	0.0344	0.0115	0.6267	within noise floor
+ΔDCCM, Frobenius / N	0.0019	0.0019	5.090e-04	0.0215	within noise floor
+ΔDCCM, target × region mean	-1.176e-04	4.618e-04	1.063e-04	-5.4500	outside noise floor
